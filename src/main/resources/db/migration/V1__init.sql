@@ -1,0 +1,22 @@
+-- Flyway migration V1
+
+CREATE TABLE IF NOT EXISTS users (
+  id BIGSERIAL PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS posts (
+  id BIGSERIAL PRIMARY KEY,
+  author_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  display_at DATE NOT NULL DEFAULT (current_date + 1)
+);
+
+CREATE TABLE IF NOT EXISTS revoked_tokens (
+  jti TEXT PRIMARY KEY,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+

@@ -1,0 +1,43 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: motd
+      POSTGRES_USER: motd
+      POSTGRES_PASSWORD: motd
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  flyway:
+    image: flyway/flyway:9
+    depends_on:
+      - db
+    volumes:
+      - ./src/main/resources/db/migration:/flyway/sql:ro
+      - flyway-state:/flyway/state
+    entrypoint: ["/bin/sh", "-c"]
+    # baselineOnMigrate=true: if the DB already has objects (from previous runs), initialize flyway history without failing
+    command: ["flyway -url=jdbc:postgresql://db:5432/motd -user=motd -password=motd -baselineOnMigrate=true migrate && mkdir -p /flyway/state && touch /flyway/state/done"]
+
+  app:
+    build: .
+    depends_on:
+      - db
+      - flyway
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: motd
+      DB_USER: motd
+      DB_PASSWORD: motd
+      JWT_SECRET: "replace-with-secure-secret"
+    volumes:
+      - flyway-state:/flyway/state:ro
+    ports:
+      - "7000:7000"
+volumes:
+  db-data:
+  flyway-state:
