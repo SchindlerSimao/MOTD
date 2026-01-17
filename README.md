@@ -1,44 +1,100 @@
 # MOTD
 
-Simple "message of the day" system where authenticated users can submit messages that will be displayed to everyone the following day.
+simple "message of the day" system where authenticated users can submit messages that will be displayed to everyone the following day.
 
-Developed by Colin Stefani and Simão Romano Schindler, as part of the teaching unit
-"Développement d'applications internet (DAI)" at HEIG-VD.
+developed by Colin Stefani and Simão Romano Schindler, as part of the teaching unit "Développement d'applications internet (DAI)" at HEIG-VD.
 
-## Features
+## features
 
-### User Management
-- **User Registration** (`POST /auth/register`) - Create a new account freely without authentication,
-- **User Authentication** (`POST /auth/login`) - Secure login with JWT token generation,
-- **Session Management** (`POST /auth/logout`) - Safe logout and token invalidation,
-- **Account Deletion** (`POST /auth/delete`) - Remove user account and associated data.
+### user management
+- `POST /auth/register` - create a new account freely without authentication
+- `POST /auth/login` - secure login with jwt token generation
+- `POST /auth/logout` - safe logout and token invalidation
+- `DELETE /auth/delete` - remove user account and associated data
 
-### Message of the Day (MOTD) Management
-- **Public Viewing** (`GET /posts`) - Browse all MOTDs without authentication required,
-- **Create MOTD** (`POST /posts`) - Authenticated users can submit new messages,
-- **Update MOTD** (`PUT /posts`) - Authors can edit their own messages,
-- **Delete MOTD** (`DELETE /posts`) - Authors can remove their own messages.
+### message of the day (motd) management
+- `GET /posts` - browse all motds without authentication required
+- `POST /posts` - authenticated users can submit new messages
+- `PUT /posts/{id}` - authors can edit their own messages
+- `DELETE /posts/{id}` - authors can remove their own messages
 
-### Security
-- JWT-based authentication for protected endpoints,
-- Authorization checks ensuring users can only modify their own content.
+### security
+- jwt-based authentication for protected endpoints
+- authorization checks ensuring users can only modify their own content
 
 ---
 
-## Installation
+## installation
 
-### Prerequisites
-- Java 21+
+### prerequisites
+- java 21+
+- docker and docker-compose (for containerized deployment)
 
-### Clone the repository
+### clone the repository
 ```bash
 git clone git@github.com:SchindlerSimao/MOTD.git
+cd MOTD
 ```
-### Build
+
+### build
+
+build the project with maven:
+```bash
+mvn clean package
+```
 
 ---
 
-## Usage
+## usage
+
+### running with docker compose
+
+start all services (database, migrations, and application):
+```bash
+docker-compose up --build
+```
+
+the api will be available at `http://localhost:7000`
+
+### environment variables
+
+the following environment variables can be configured:
+
+- `DB_HOST` - database host (default: `db`)
+- `DB_PORT` - database port (default: `5432`)
+- `DB_NAME` - database name (default: `motd`)
+- `DB_USER` - database user (default: `motd`)
+- `DB_PASSWORD` - database password (default: `motd`)
+- `JWT_SECRET` - secret key for jwt token signing (default: `change-me-in-prod`)
+
+### api examples
+
+**register a new user:**
+```bash
+curl -X POST http://localhost:7000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "alice", "password": "secret123"}'
+```
+
+**login:**
+```bash
+curl -X POST http://localhost:7000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "alice", "password": "secret123"}'
+```
+
+**create a post (requires authentication):**
+```bash
+curl -X POST http://localhost:7000/posts \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"content": "hello world!"}'
+```
+
+**get all posts:**
+```bash
+curl http://localhost:7000/posts
+```
 
 ---
 
