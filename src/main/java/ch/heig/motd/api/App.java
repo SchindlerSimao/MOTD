@@ -6,6 +6,7 @@ import ch.heig.motd.db.DbConfig;
 import ch.heig.motd.repository.PostgresPostRepository;
 import ch.heig.motd.repository.PostgresUserRepository;
 import ch.heig.motd.service.AuthService;
+import ch.heig.motd.service.AuthServiceImpl;
 import ch.heig.motd.service.PostService;
 import ch.heig.motd.service.PostServicePostgres;
 import ch.heig.motd.service.UserService;
@@ -26,7 +27,7 @@ public class App {
         PostService postService = new PostServicePostgres(pgPost, pgUser);
 
         var tokenStore = new ch.heig.motd.repository.TokenRevocationStore();
-        AuthService authService = new AuthService(userService, tokenStore, JwtProvider.defaultProvider());
+        AuthService authService = new AuthServiceImpl(userService, tokenStore, JwtProvider.defaultProvider());
 
         var app = Javalin.create(config -> {
             // default configuration
