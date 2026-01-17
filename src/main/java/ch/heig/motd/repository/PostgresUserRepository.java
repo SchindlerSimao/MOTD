@@ -9,12 +9,13 @@ import java.sql.*;
 import java.time.Instant;
 import java.util.Optional;
 
-public class PostgresUserRepository {
+public class PostgresUserRepository implements UserRepository {
     private static final Logger log = LoggerFactory.getLogger(PostgresUserRepository.class);
     private final DataSource ds;
 
     public PostgresUserRepository(DataSource ds) { this.ds = ds; }
 
+    @Override
     public Optional<User> findById(long id) {
         log.debug("Finding user by id {}", id);
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT id, username, password_hash, created_at FROM users WHERE id = ?")) {
@@ -25,6 +26,7 @@ public class PostgresUserRepository {
         } catch (SQLException e) { log.error("Error finding user {}", id, e); throw new RuntimeException(e); }
     }
 
+    @Override
     public Optional<User> findByUsername(String username) {
         log.debug("Finding user by username {}", username);
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT id, username, password_hash, created_at FROM users WHERE username = ?")) {
@@ -35,6 +37,7 @@ public class PostgresUserRepository {
         } catch (SQLException e) { log.error("Error finding user by username {}", username, e); throw new RuntimeException(e); }
     }
 
+    @Override
     public User save(String username, String passwordHash) {
         log.debug("Saving user {}", username);
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("INSERT INTO users(username, password_hash, created_at) VALUES (?, ?, now())", Statement.RETURN_GENERATED_KEYS)) {
@@ -47,6 +50,7 @@ public class PostgresUserRepository {
         } catch (SQLException e) { log.error("Error saving user {}", username, e); throw new RuntimeException(e); }
     }
 
+    @Override
     public void delete(long id) {
         log.debug("Deleting user {}", id);
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("DELETE FROM users WHERE id = ?")) {

@@ -12,12 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class PostgresPostRepository {
+public class PostgresPostRepository implements PostRepository {
     private static final Logger log = LoggerFactory.getLogger(PostgresPostRepository.class);
     private final DataSource ds;
 
     public PostgresPostRepository(DataSource ds) { this.ds = ds; }
 
+    @Override
     public Post save(long authorId, String content) {
         log.debug("Saving post for author {}", authorId);
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("INSERT INTO posts(author_id, content, created_at, display_at) VALUES (?, ?, now(), current_date + 1) RETURNING id, created_at, display_at")) {
@@ -39,6 +40,7 @@ public class PostgresPostRepository {
         }
     }
 
+    @Override
     public Optional<Post> findById(long id) {
         log.debug("Finding post by id {}", id);
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT id, author_id, content, created_at, display_at FROM posts WHERE id = ?")) {
@@ -51,6 +53,7 @@ public class PostgresPostRepository {
         } catch (SQLException e) { log.error("Error finding post {}", id, e); throw new RuntimeException(e); }
     }
 
+    @Override
     public List<Post> findAll() {
         log.debug("Finding all posts");
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT id, author_id, content, created_at, display_at FROM posts ORDER BY created_at DESC")) {
@@ -61,6 +64,7 @@ public class PostgresPostRepository {
         } catch (SQLException e) { log.error("Error finding all posts", e); throw new RuntimeException(e); }
     }
 
+    @Override
     public void delete(long id) {
         log.debug("Deleting post {}", id);
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("DELETE FROM posts WHERE id = ?")) {
@@ -69,6 +73,7 @@ public class PostgresPostRepository {
         } catch (SQLException e) { log.error("Error deleting post {}", id, e); throw new RuntimeException(e); }
     }
 
+    @Override
     public Post updateContent(long id, String content) {
         log.debug("Updating post {} content", id);
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("UPDATE posts SET content = ? WHERE id = ? RETURNING id, author_id, content, created_at, display_at")) {
