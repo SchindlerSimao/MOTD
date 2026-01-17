@@ -2,7 +2,7 @@ package ch.heig.motd.service;
 
 import ch.heig.motd.auth.JwtProvider;
 import ch.heig.motd.model.User;
-import ch.heig.motd.repository.TokenRevocationStore;
+import ch.heig.motd.repository.TokenStore;
 import com.auth0.jwt.algorithms.Algorithm;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,14 +15,14 @@ import static org.mockito.Mockito.*;
 
 public class AuthServiceTest {
     private UserService userService;
-    private TokenRevocationStore tokenStore;
+    private TokenStore tokenStore;
     private JwtProvider jwtProvider;
     private AuthService authService;
 
     @BeforeEach
     public void setup() {
         userService = mock(UserService.class);
-        tokenStore = new TokenRevocationStore();
+        tokenStore = mock(TokenStore.class);
         jwtProvider = new JwtProvider(Algorithm.HMAC256("test-secret"));
         authService = new AuthServiceImpl(userService, tokenStore, jwtProvider);
     }
@@ -66,13 +66,13 @@ public class AuthServiceTest {
 
         authService.logout(jti, exp);
 
-        assertTrue(tokenStore.isRevoked(jti));
+        verify(tokenStore).revoke(jti, exp);
     }
 
     @Test
     public void validateAndGetUserId_revokedToken_returnsEmpty() {
         String token = jwtProvider.createToken(42L, "alice", "jti-123");
-        tokenStore.revoke("jti-123", Instant.now().plusSeconds(3600));
+        when(tokenStore.isRevoked("jti-123")).thenReturn(true);
 
         var result = authService.validateAndGetUserId(token);
 
@@ -82,6 +82,7 @@ public class AuthServiceTest {
     @Test
     public void validateAndGetUserId_validToken_returnsUserId() {
         String token = jwtProvider.createToken(42L, "alice", "jti-123");
+        when(tokenStore.isRevoked("jti-123")).thenReturn(false);
 
         var result = authService.validateAndGetUserId(token);
 

@@ -1,7 +1,7 @@
 package ch.heig.motd.service;
 
 import ch.heig.motd.auth.JwtProvider;
-import ch.heig.motd.repository.TokenRevocationStore;
+import ch.heig.motd.repository.TokenStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,10 +13,10 @@ public class AuthServiceImpl implements AuthService {
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
     private final UserService userService;
-    private final TokenRevocationStore tokenStore;
+    private final TokenStore tokenStore;
     private final JwtProvider jwtProvider;
 
-    public AuthServiceImpl(UserService userService, TokenRevocationStore tokenStore, JwtProvider jwtProvider) {
+    public AuthServiceImpl(UserService userService, TokenStore tokenStore, JwtProvider jwtProvider) {
         this.userService = userService;
         this.tokenStore = tokenStore;
         this.jwtProvider = jwtProvider;
