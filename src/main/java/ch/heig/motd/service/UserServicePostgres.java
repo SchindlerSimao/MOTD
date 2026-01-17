@@ -1,7 +1,7 @@
 package ch.heig.motd.service;
 
 import ch.heig.motd.model.User;
-import ch.heig.motd.repository.PostgresUserRepository;
+import ch.heig.motd.repository.UserRepository;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,9 +10,9 @@ import java.util.Optional;
 
 public class UserServicePostgres implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServicePostgres.class);
-    private final PostgresUserRepository repo;
+    private final UserRepository repo;
 
-    public UserServicePostgres(PostgresUserRepository repo) {
+    public UserServicePostgres(UserRepository repo) {
         this.repo = repo;
     }
 

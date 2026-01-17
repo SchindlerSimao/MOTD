@@ -1,8 +1,8 @@
 package ch.heig.motd.service;
 
 import ch.heig.motd.model.Post;
-import ch.heig.motd.repository.PostgresPostRepository;
-import ch.heig.motd.repository.PostgresUserRepository;
+import ch.heig.motd.repository.PostRepository;
+import ch.heig.motd.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,10 +11,10 @@ import java.util.Optional;
 
 public class PostServicePostgres implements PostService {
     private static final Logger log = LoggerFactory.getLogger(PostServicePostgres.class);
-    private final PostgresPostRepository postRepo;
-    private final PostgresUserRepository userRepo;
+    private final PostRepository postRepo;
+    private final UserRepository userRepo;
 
-    public PostServicePostgres(PostgresPostRepository postRepo, PostgresUserRepository userRepo) {
+    public PostServicePostgres(PostRepository postRepo, UserRepository userRepo) {
         this.postRepo = postRepo;
         this.userRepo = userRepo;
     }
