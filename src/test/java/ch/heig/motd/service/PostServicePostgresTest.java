@@ -1,8 +1,8 @@
 package ch.heig.motd.service;
 
 import ch.heig.motd.model.Post;
-import ch.heig.motd.repository.PostgresPostRepository;
-import ch.heig.motd.repository.PostgresUserRepository;
+import ch.heig.motd.repository.PostRepository;
+import ch.heig.motd.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,14 +15,14 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class PostServicePostgresTest {
-    private PostgresPostRepository postRepo;
-    private PostgresUserRepository userRepo;
+    private PostRepository postRepo;
+    private UserRepository userRepo;
     private PostServicePostgres service;
 
     @BeforeEach
     public void setup() {
-        postRepo = mock(PostgresPostRepository.class);
-        userRepo = mock(PostgresUserRepository.class);
+        postRepo = mock(PostRepository.class);
+        userRepo = mock(UserRepository.class);
         service = new PostServicePostgres(postRepo, userRepo);
     }
 

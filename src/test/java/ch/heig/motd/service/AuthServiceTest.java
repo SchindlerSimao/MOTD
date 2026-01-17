@@ -22,9 +22,9 @@ public class AuthServiceTest {
     @BeforeEach
     public void setup() {
         userService = mock(UserService.class);
-        tokenStore = mock(TokenRevocationStore.class);
+        tokenStore = new TokenRevocationStore();
         jwtProvider = new JwtProvider(Algorithm.HMAC256("test-secret"));
-        authService = new AuthService(userService, tokenStore, jwtProvider);
+        authService = new AuthServiceImpl(userService, tokenStore, jwtProvider);
     }
 
     @Test
@@ -66,13 +66,13 @@ public class AuthServiceTest {
 
         authService.logout(jti, exp);
 
-        verify(tokenStore).revoke(jti, exp);
+        assertTrue(tokenStore.isRevoked(jti));
     }
 
     @Test
     public void validateAndGetUserId_revokedToken_returnsEmpty() {
         String token = jwtProvider.createToken(42L, "alice", "jti-123");
-        when(tokenStore.isRevoked("jti-123")).thenReturn(true);
+        tokenStore.revoke("jti-123", Instant.now().plusSeconds(3600));
 
         var result = authService.validateAndGetUserId(token);
 
@@ -82,7 +82,6 @@ public class AuthServiceTest {
     @Test
     public void validateAndGetUserId_validToken_returnsUserId() {
         String token = jwtProvider.createToken(42L, "alice", "jti-123");
-        when(tokenStore.isRevoked("jti-123")).thenReturn(false);
 
         var result = authService.validateAndGetUserId(token);
 

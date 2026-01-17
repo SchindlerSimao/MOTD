@@ -1,7 +1,7 @@
 package ch.heig.motd.service;
 
 import ch.heig.motd.model.User;
-import ch.heig.motd.repository.PostgresUserRepository;
+import ch.heig.motd.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mindrot.jbcrypt.BCrypt;
@@ -13,12 +13,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class UserServicePostgresTest {
-    private PostgresUserRepository repo;
+    private UserRepository repo;
     private UserServicePostgres service;
 
     @BeforeEach
     public void setup() {
-        repo = mock(PostgresUserRepository.class);
+        repo = mock(UserRepository.class);
         service = new UserServicePostgres(repo);
     }
 
