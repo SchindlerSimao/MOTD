@@ -39,3 +39,7 @@ git clone git@github.com:SchindlerSimao/MOTD.git
 ---
 
 ## Usage
+
+---
+
+parts of this project were developed with ai assistance.
