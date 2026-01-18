@@ -97,4 +97,21 @@ public class AuthController {
             ctx.status(500).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.INTERNAL_ERROR));
         }
     }
+
+    public void delete(Context ctx) {
+        try {
+            final String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);
+            if (auth == null || !auth.startsWith(ApiConstants.Headers.BEARER_PREFIX)) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.MISSING_TOKEN)); return; }
+            final String token = auth.substring(ApiConstants.Headers.BEARER_PREFIX.length());
+            var userIdOpt = authService.validateAndGetUserId(token);
+            if (userIdOpt.isEmpty()) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.UNAUTHORIZED)); return; }
+            long userId = userIdOpt.get();
+            userService.delete(userId);
+            log.info("User account deleted: userId={}", userId);
+            ctx.status(204);
+        } catch (Exception e) {
+            log.error("Unexpected error in delete", e);
+            ctx.status(500).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.INTERNAL_ERROR));
+        }
+    }
 }
