@@ -14,7 +14,9 @@ public class JwtProvider {
 
     public static JwtProvider defaultProvider() {
         String secret = System.getenv("JWT_SECRET");
-        if (secret == null || secret.isBlank()) secret = "change-me-in-prod"; // TODO: better secret management? :)
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("JWT_SECRET environment variable is required but not set");
+        }
         var alg = Algorithm.HMAC256(secret);
         return new JwtProvider(alg);
     }
