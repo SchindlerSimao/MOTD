@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   db:
     image: postgres:15
@@ -38,6 +37,19 @@ services:
       - flyway-state:/flyway/state:ro
     ports:
       - "7000:7000"
+    networks:
+      - default
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.motd.rule=Host(`motd.duckdns.org`)"
+      - "traefik.http.routers.motd.entrypoints=web"
+      - "traefik.http.services.motd.loadbalancer.server.port=7000"
+
 volumes:
   db-data:
   flyway-state:
+
+networks:
+  traefik-public:
+    external: true
