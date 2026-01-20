@@ -22,7 +22,7 @@ services:
     command: ["flyway -url=jdbc:postgresql://db:5432/motd -user=motd -password=motd -baselineOnMigrate=true migrate && mkdir -p /flyway/state && touch /flyway/state/done"]
 
   app:
-    build: .
+    image: ghcr.io/schindlersimao/motd:latest
     depends_on:
       - db
       - flyway
