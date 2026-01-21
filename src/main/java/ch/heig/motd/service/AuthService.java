@@ -1,6 +1,7 @@
 package ch.heig.motd.service;
 
 import ch.heig.motd.auth.JwtProviderInterface;
+import com.auth0.jwt.interfaces.DecodedJWT;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -37,6 +38,14 @@ public interface AuthService {
      * @return an Optional containing the user ID if the token is valid, or empty if not
      */
     Optional<Long> validateAndGetUserId(String token);
+
+    /**
+     * Validates a JWT token and returns the decoded JWT (claims) if valid.
+     * This allows callers (middleware/controllers) to access claims without re-verifying the token.
+     * @param token the JWT token to validate
+     * @return an Optional containing the DecodedJWT if the token is valid and not revoked, or empty if not
+     */
+    Optional<DecodedJWT> validateAndGetClaims(String token);
 
     /**
      * Gets the JwtProvider instance.

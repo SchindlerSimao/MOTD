@@ -5,6 +5,7 @@ import ch.heig.motd.dto.Credentials;
 import ch.heig.motd.service.AuthService;
 import ch.heig.motd.service.UserService;
 import ch.heig.motd.auth.JwtProviderInterface;
+import ch.heig.motd.api.AuthMiddleware;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.javalin.http.Context;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,7 +79,8 @@ public class AuthControllerTest {
 
     @Test
     public void logout_missingToken_returns401() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(null);
+        // simulate middleware not setting decodedJwt
+        when(ctx.attribute("decodedJwt")).thenReturn(null);
 
         controller.logout(ctx);
 
@@ -88,32 +90,71 @@ public class AuthControllerTest {
 
     @Test
     public void logout_invalidToken_returns401() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "bad");
-        JwtProviderInterface jwtProv = mock(JwtProviderInterface.class);
-        when(authService.jwtProvider()).thenReturn(jwtProv);
-        when(jwtProv.verifyToken("bad")).thenReturn(null);
+        // middleware attempted to set decodedJwt but it's null/invalid
+        when(ctx.attribute("decodedJwt")).thenReturn(null);
 
         controller.logout(ctx);
 
         verify(ctx).status(401);
-        verify(ctx).json(argThat(obj -> ((Map) obj).get(ApiConstants.Keys.ERROR).equals(ApiConstants.Errors.INVALID_TOKEN)));
+        verify(ctx).json(argThat(obj -> ((Map) obj).get(ApiConstants.Keys.ERROR).equals(ApiConstants.Errors.MISSING_TOKEN)));
     }
 
     @Test
     public void logout_validToken_revokes_and_returns200() {
-        String token = "goodTok";
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + token);
-        JwtProviderInterface jwtProv = mock(JwtProviderInterface.class);
         DecodedJWT dec = mock(DecodedJWT.class);
-        when(authService.jwtProvider()).thenReturn(jwtProv);
-        when(jwtProv.verifyToken(token)).thenReturn(dec);
         when(dec.getId()).thenReturn("jti-123");
         when(dec.getExpiresAt()).thenReturn(Date.from(Instant.now().plusSeconds(3600)));
+
+        // simulate middleware setting the decoded JWT into the context
+        when(ctx.attribute("decodedJwt")).thenReturn(dec);
 
         controller.logout(ctx);
 
         verify(authService).logout(eq("jti-123"), any());
         verify(ctx).status(200);
         verify(ctx).json(argThat(obj -> ((Map) obj).get("message").equals("logged.out")));
+    }
+
+    @Test
+    public void delete_missingToken_returns401() {
+        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(null);
+        when(ctx.method()).thenReturn(io.javalin.http.HandlerType.DELETE);
+
+        // use centralized middleware
+        AuthMiddleware authMiddleware = new AuthMiddleware(authService);
+        authMiddleware.requireAuth(ctx);
+
+        verify(ctx).status(401);
+        verify(ctx).json(argThat(obj -> ((Map) obj).get(ApiConstants.Keys.ERROR).equals(ApiConstants.Errors.MISSING_TOKEN)));
+    }
+
+    @Test
+    public void delete_invalidToken_returns401() {
+        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "bad");
+        when(ctx.method()).thenReturn(io.javalin.http.HandlerType.DELETE);
+        when(authService.validateAndGetUserId("bad")).thenReturn(Optional.empty());
+
+        AuthMiddleware authMiddleware = new AuthMiddleware(authService);
+        authMiddleware.requireAuth(ctx);
+
+        verify(ctx).status(401);
+        verify(ctx).json(argThat(obj -> ((Map) obj).get(ApiConstants.Keys.ERROR).equals(ApiConstants.Errors.INVALID_TOKEN)));
+    }
+
+    @Test
+    public void delete_validToken_deletes_and_returns204() {
+        String token = "goodTok";
+        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + token);
+        when(ctx.method()).thenReturn(io.javalin.http.HandlerType.DELETE);
+        when(authService.validateAndGetUserId(token)).thenReturn(Optional.of(123L));
+
+        AuthMiddleware authMiddleware = new AuthMiddleware(authService);
+        authMiddleware.requireAuth(ctx);
+        when(ctx.attribute("uid")).thenReturn(123L);
+
+        controller.delete(ctx);
+
+        verify(userService).delete(123L);
+        verify(ctx).status(204);
     }
 }

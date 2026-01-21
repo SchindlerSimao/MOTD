@@ -23,14 +23,29 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Controller for managing posts.
+ */
 public class PostController {
+    /**
+     * Logger instance for logging.
+     */
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
     private static final String POSTS_CACHE_KEY = "all_posts";
 
     private final PostService postService;
+
+    /**
+     * Authentication service for handling authentication.
+     */
     private final AuthService authService;
     private final Cache<String, List<Map<String, Object>>> postsCache;
 
+    /**
+     * Constructor.
+     * @param postService post service
+     * @param authService authentication service
+     */
     public PostController(PostService postService, AuthService authService) {
         this.postService = postService;
         this.authService = authService;
@@ -40,25 +55,10 @@ public class PostController {
             .build();
     }
 
-    public void requireAuth(Context ctx) {
-        HandlerType method = ctx.method();
-        if (!(method == HandlerType.POST || method == HandlerType.PUT || method == HandlerType.DELETE)) {
-            return;
-        }
-        String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);
-        if (auth == null || !auth.startsWith(ApiConstants.Headers.BEARER_PREFIX)) {
-            ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.MISSING_TOKEN));
-            return;
-        }
-        String token = auth.substring(ApiConstants.Headers.BEARER_PREFIX.length());
-        Optional<Long> opt = authService.validateAndGetUserId(token);
-        if (opt.isEmpty()) {
-            ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.INVALID_TOKEN));
-            return;
-        }
-        ctx.attribute("uid", opt.get());
-    }
-
+    /**
+     * Lists all existing posts.
+     * @param ctx Javalin context
+     */
     @OpenApi(
         path = "/posts",
         methods = HttpMethod.GET,
