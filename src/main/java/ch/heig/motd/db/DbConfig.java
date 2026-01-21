@@ -27,8 +27,8 @@ public class DbConfig {
             HikariConfig cfg = new HikariConfig();
             cfg.setJdbcUrl(jdbcUrl);
             // optional user/pass from env
-            var user = System.getenv("DB_USER");
-            var pass = System.getenv("DB_PASSWORD");
+            String user = System.getenv("DB_USER");
+            String pass = System.getenv("DB_PASSWORD");
             if (user != null) cfg.setUsername(user);
             if (pass != null) cfg.setPassword(pass);
             cfg.setMaximumPoolSize(5);

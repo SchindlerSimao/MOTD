@@ -3,6 +3,7 @@ package ch.heig.motd.auth;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.auth0.jwt.interfaces.JWTVerifier;
 
 import java.time.Instant;
 import java.util.Date;
@@ -17,7 +18,7 @@ public class JwtProvider {
         if (secret == null || secret.isBlank()) {
             throw new IllegalStateException("JWT_SECRET environment variable is required but not set");
         }
-        var alg = Algorithm.HMAC256(secret);
+        Algorithm alg = Algorithm.HMAC256(secret);
         return new JwtProvider(alg);
     }
 
@@ -35,7 +36,7 @@ public class JwtProvider {
 
     public DecodedJWT verifyToken(String token) {
         try {
-            var verifier = JWT.require(algorithm).build();
+            JWTVerifier verifier = JWT.require(algorithm).build();
             return verifier.verify(token);
         } catch (Exception e) {
             return null;

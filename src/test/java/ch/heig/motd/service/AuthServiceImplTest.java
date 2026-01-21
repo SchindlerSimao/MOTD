@@ -32,7 +32,7 @@ public class AuthServiceImplTest {
     public void login_userNotFound_returnsEmpty() {
         when(userService.findByUsername("nope")).thenReturn(Optional.empty());
 
-        var res = authService.login("nope", "x");
+        Optional<String> res = authService.login("nope", "x");
 
         assertTrue(res.isEmpty());
         verify(userService).findByUsername("nope");
@@ -44,7 +44,7 @@ public class AuthServiceImplTest {
         when(userService.findByUsername("bob")).thenReturn(Optional.of(u));
         when(userService.verifyPassword(u, "wrong")).thenReturn(false);
 
-        var res = authService.login("bob", "wrong");
+        Optional<String> res = authService.login("bob", "wrong");
 
         assertTrue(res.isEmpty());
         verify(userService).verifyPassword(u, "wrong");
@@ -57,7 +57,7 @@ public class AuthServiceImplTest {
         when(userService.verifyPassword(u, "pwd")).thenReturn(true);
         when(jwtProvider.createToken(eq(1L), eq("alice"), anyString())).thenReturn("tk");
 
-        var res = authService.login("alice", "pwd");
+        Optional<String> res = authService.login("alice", "pwd");
 
         assertTrue(res.isPresent());
         assertEquals("tk", res.get());
@@ -75,7 +75,7 @@ public class AuthServiceImplTest {
     public void validateAndGetUserId_invalidToken_returnsEmpty() {
         when(jwtProvider.verifyToken("bad")).thenReturn(null);
 
-        var res = authService.validateAndGetUserId("bad");
+        Optional<Long> res = authService.validateAndGetUserId("bad");
 
         assertTrue(res.isEmpty());
     }
@@ -88,7 +88,7 @@ public class AuthServiceImplTest {
         when(jwtProvider.verifyToken("tok")).thenReturn(jwt);
         when(tokenStore.isRevoked("jti-x")).thenReturn(true);
 
-        var res = authService.validateAndGetUserId("tok");
+        Optional<Long> res = authService.validateAndGetUserId("tok");
 
         assertTrue(res.isEmpty());
         verify(tokenStore).isRevoked("jti-x");
@@ -102,7 +102,7 @@ public class AuthServiceImplTest {
         when(jwtProvider.verifyToken("tok2")).thenReturn(jwt);
         when(tokenStore.isRevoked("jti-y")).thenReturn(false);
 
-        var res = authService.validateAndGetUserId("tok2");
+        Optional<Long> res = authService.validateAndGetUserId("tok2");
 
         assertTrue(res.isPresent());
         assertEquals(7L, res.get());

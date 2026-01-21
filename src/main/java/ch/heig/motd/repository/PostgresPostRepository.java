@@ -24,7 +24,7 @@ public class PostgresPostRepository implements PostRepository {
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("INSERT INTO posts(author_id, content, created_at, display_at) VALUES (?, ?, now(), current_date + 1) RETURNING id, created_at, display_at")) {
             ps.setLong(1, authorId);
             ps.setString(2, content);
-            var rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 long id = rs.getLong("id");
                 Instant created = rs.getTimestamp("created_at").toInstant();
@@ -45,7 +45,7 @@ public class PostgresPostRepository implements PostRepository {
         log.debug("Finding post by id {}", id);
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT id, author_id, content, created_at, display_at FROM posts WHERE id = ?")) {
             ps.setLong(1, id);
-            var rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 return Optional.of(map(rs));
             }
@@ -57,7 +57,7 @@ public class PostgresPostRepository implements PostRepository {
     public List<Post> findAll() {
         log.debug("Finding all posts");
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT id, author_id, content, created_at, display_at FROM posts ORDER BY created_at DESC")) {
-            var rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
             List<Post> out = new ArrayList<>();
             while (rs.next()) out.add(map(rs));
             return out;
@@ -79,7 +79,7 @@ public class PostgresPostRepository implements PostRepository {
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("UPDATE posts SET content = ? WHERE id = ? RETURNING id, author_id, content, created_at, display_at")) {
             ps.setString(1, content);
             ps.setLong(2, id);
-            var rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
             if (rs.next()) return map(rs);
             throw new RuntimeException("not found");
         } catch (SQLException e) { log.error("Error updating post {}", id, e); throw new RuntimeException(e); }

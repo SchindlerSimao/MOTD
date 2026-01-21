@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 
 public class AuthController {
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
@@ -64,14 +65,14 @@ public class AuthController {
 
     public void login(Context ctx) {
         try {
-            var body = ctx.bodyAsClass(Map.class);
+            Map body = ctx.bodyAsClass(Map.class);
             String username = (String) body.get(ApiConstants.Keys.USERNAME);
             String password = (String) body.get(ApiConstants.Keys.PASSWORD);
             if (username == null || password == null) {
                 ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.MISSING_USERNAME_OR_PASSWORD));
                 return;
             }
-            var ot = authService.login(username, password);
+            Optional<String> ot = authService.login(username, password);
             if (ot.isEmpty()) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.INVALID_CREDENTIALS)); return; }
             String token = ot.get();
             ctx.status(200).json(Map.of(ApiConstants.Keys.TOKEN, token));
@@ -103,7 +104,7 @@ public class AuthController {
             final String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);
             if (auth == null || !auth.startsWith(ApiConstants.Headers.BEARER_PREFIX)) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.MISSING_TOKEN)); return; }
             final String token = auth.substring(ApiConstants.Headers.BEARER_PREFIX.length());
-            var userIdOpt = authService.validateAndGetUserId(token);
+            java.util.Optional<Long> userIdOpt = authService.validateAndGetUserId(token);
             if (userIdOpt.isEmpty()) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.UNAUTHORIZED)); return; }
             long userId = userIdOpt.get();
             userService.delete(userId);

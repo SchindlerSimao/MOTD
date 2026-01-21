@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class PostController {
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
@@ -27,13 +29,13 @@ public class PostController {
     public void list(Context ctx) {
         try {
             List<Post> posts = postService.findAll();
-            var out = posts.stream().map(p -> Map.of(
+            List out = posts.stream().map(p -> Map.of(
                     "id", p.getId(),
                     "authorId", p.getAuthorId(),
                     ApiConstants.Keys.CONTENT, p.getContent(),
                     "createdAt", p.getCreatedAt().toString(),
                     "displayAt", p.getDisplayAt().toString()
-            )).toList();
+            )).collect(Collectors.toList());
             ctx.json(out);
         } catch (Exception e) {
             log.error("Unexpected error in list posts", e);
@@ -45,7 +47,7 @@ public class PostController {
         String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);
         if (auth == null || !auth.startsWith(ApiConstants.Headers.BEARER_PREFIX)) return null;
         String token = auth.substring(ApiConstants.Headers.BEARER_PREFIX.length());
-        var opt = authService.validateAndGetUserId(token);
+        Optional<Long> opt = authService.validateAndGetUserId(token);
         return opt.orElse(null);
     }
 
@@ -62,7 +64,7 @@ public class PostController {
                 // Fallback: try to parse as a generic map (compatibility with malformed/old clients)
                 log.warn("Failed to parse body as PostDto, trying Map fallback: {}", e.getMessage());
                 try {
-                    var bodyMap = ctx.bodyAsClass(Map.class);
+                    Map bodyMap = ctx.bodyAsClass(Map.class);
                     content = (String) bodyMap.get(ApiConstants.Keys.CONTENT);
                 } catch (Exception e2) {
                     log.error("Failed to parse request body for create post", e2);
@@ -86,11 +88,11 @@ public class PostController {
             Long uid = getUserIdFromAuth(ctx);
             if (uid == null) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.UNAUTHORIZED)); return; }
             long id = Long.parseLong(ctx.pathParam("id"));
-            var op = postService.findById(id);
+            Optional<Post> op = postService.findById(id);
             if (op.isEmpty()) { ctx.status(404).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.NOT_FOUND)); return; }
-            var p = op.get();
+            Post p = op.get();
             if (p.getAuthorId() != uid) { ctx.status(403).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.FORBIDDEN)); return; }
-            var body = ctx.bodyAsClass(Map.class);
+            Map body = ctx.bodyAsClass(Map.class);
             String content = (String) body.get(ApiConstants.Keys.CONTENT);
             if (content == null || content.isBlank()) { ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.EMPTY_CONTENT)); return; }
             p = postService.updateContent(id, content);
@@ -106,9 +108,9 @@ public class PostController {
             Long uid = getUserIdFromAuth(ctx);
             if (uid == null) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.UNAUTHORIZED)); return; }
             long id = Long.parseLong(ctx.pathParam("id"));
-            var op = postService.findById(id);
+            Optional<Post> op = postService.findById(id);
             if (op.isEmpty()) { ctx.status(404).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.NOT_FOUND)); return; }
-            var p = op.get();
+            Post p = op.get();
             if (p.getAuthorId() != uid) { ctx.status(403).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.FORBIDDEN)); return; }
             postService.delete(id);
             ctx.status(204);

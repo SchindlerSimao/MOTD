@@ -14,7 +14,7 @@ public class TokenRevocationStore implements TokenStore {
 
     @Override
     public boolean isRevoked(String jti) {
-        var exp = revoked.get(jti);
+        Instant exp = revoked.get(jti);
         if (exp == null) return false;
         if (exp.isBefore(Instant.now())) {
             revoked.remove(jti);

@@ -20,7 +20,7 @@ public class PostgresUserRepository implements UserRepository {
         log.debug("Finding user by id {}", id);
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT id, username, password_hash, created_at FROM users WHERE id = ?")) {
             ps.setLong(1, id);
-            var rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
             if (rs.next()) return Optional.of(map(rs));
             return Optional.empty();
         } catch (SQLException e) { log.error("Error finding user {}", id, e); throw new RuntimeException(e); }
@@ -31,7 +31,7 @@ public class PostgresUserRepository implements UserRepository {
         log.debug("Finding user by username {}", username);
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT id, username, password_hash, created_at FROM users WHERE username = ?")) {
             ps.setString(1, username);
-            var rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
             if (rs.next()) return Optional.of(map(rs));
             return Optional.empty();
         } catch (SQLException e) { log.error("Error finding user by username {}", username, e); throw new RuntimeException(e); }
@@ -44,7 +44,7 @@ public class PostgresUserRepository implements UserRepository {
             ps.setString(1, username);
             ps.setString(2, passwordHash);
             ps.executeUpdate();
-            var rs = ps.getGeneratedKeys();
+            ResultSet rs = ps.getGeneratedKeys();
             if (rs.next()) return new User(rs.getLong(1), username, passwordHash, Instant.now());
             throw new RuntimeException("no id generated");
         } catch (SQLException e) { log.error("Error saving user {}", username, e); throw new RuntimeException(e); }

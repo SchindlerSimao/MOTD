@@ -5,12 +5,14 @@ public final class ApiConstants {
 
     public static final class Paths {
         private Paths() {}
-        public static final String AUTH_REGISTER = "/auth/register";
-        public static final String AUTH_LOGIN = "/auth/login";
-        public static final String AUTH_LOGOUT = "/auth/logout";
-        public static final String AUTH_DELETE = "/auth/delete";
+        public static final String AUTH = "/auth";
         public static final String POSTS = "/posts";
-        public static final String POST_WITH_ID = "/posts/{id}";
+
+        public static final String AUTH_REGISTER = AUTH + "/register";
+        public static final String AUTH_LOGIN = AUTH + "/login";
+        public static final String AUTH_LOGOUT = AUTH + "/logout";
+        public static final String AUTH_DELETE = AUTH + "/delete";
+        public static final String POST_WITH_ID = POSTS + "/{id}";
     }
 
     public static final class Keys {
