@@ -71,21 +71,21 @@ the following environment variables can be configured:
 
 **register a new user:**
 ```bash
-curl -X POST http://localhost:7000/auth/register \
+curl -X POST https://motd.cstef.dev/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username": "alice", "password": "secret123"}'
 ```
 
 **login:**
 ```bash
-curl -X POST http://localhost:7000/auth/login \
+curl -X POST https://motd.cstef.dev/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": "alice", "password": "secret123"}'
 ```
 
 **create a post (requires authentication):**
 ```bash
-curl -X POST http://localhost:7000/posts \
+curl -X POST https://motd.cstef.dev/posts \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{"content": "hello world!"}'
@@ -93,8 +93,12 @@ curl -X POST http://localhost:7000/posts \
 
 **get all posts:**
 ```bash
-curl http://localhost:7000/posts
+curl https://motd.cstef.dev/posts
 ```
+
+**swagger ui:**
+
+the swagger ui is available at `https://motd.cstef.dev`
 
 
 ## vm creation
