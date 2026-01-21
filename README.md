@@ -205,6 +205,7 @@ curl -X DELETE http://localhost:7000/posts/1 \
 
 #### 7. logout (authenticated)
 
+invalidates the current token:
 ```bash
 curl -X POST http://localhost:7000/auth/logout \
   -H "Authorization: Bearer $TOKEN"
@@ -217,14 +218,19 @@ curl -X POST http://localhost:7000/auth/logout \
 }
 ```
 
+**note:** after logout, the token is invalidated and cannot be used for further requests.
+
 #### 8. delete user account (authenticated)
 
+alternatively, you can delete the entire user account (do this instead of logout, or login again after logout):
 ```bash
 curl -X DELETE http://localhost:7000/auth/delete \
   -H "Authorization: Bearer $TOKEN"
 ```
 
 **response (204 no content)**
+
+**note:** this permanently deletes the user account and all associated posts.
 
 ---
 
