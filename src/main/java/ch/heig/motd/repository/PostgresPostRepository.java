@@ -81,6 +81,18 @@ public class PostgresPostRepository implements PostRepository {
     }
 
     @Override
+    public List<Post> findByDisplayDate(LocalDate date) {
+        log.debug("Finding posts by display date {}", date);
+        try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT id, author_id, content, created_at, display_at FROM posts WHERE display_at = ? ORDER BY created_at DESC")) {
+            ps.setDate(1, Date.valueOf(date));
+            ResultSet rs = ps.executeQuery();
+            List<Post> out = new ArrayList<>();
+            while (rs.next()) out.add(map(rs));
+            return out;
+        } catch (SQLException e) { log.error("Error finding posts by date {}", date, e); throw new RuntimeException(e); }
+    }
+
+    @Override
     public void delete(long id) {
         log.debug("Deleting post {}", id);
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("DELETE FROM posts WHERE id = ?")) {

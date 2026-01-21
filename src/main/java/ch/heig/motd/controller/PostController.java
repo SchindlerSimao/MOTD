@@ -15,6 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +36,7 @@ public class PostController {
         this.authService = authService;
         this.postsCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(60))
-            .maximumSize(1)
+            .maximumSize(100)
             .build();
     }
 
@@ -62,14 +64,31 @@ public class PostController {
         methods = HttpMethod.GET,
         summary = "List all posts",
         tags = {"Posts"},
+        queryParams = {
+            @OpenApiParam(name = "date", description = "Filter by display date (yyyy-mm-dd)", required = false)
+        },
         responses = {
-            @OpenApiResponse(status = "200", description = "List of posts")
+            @OpenApiResponse(status = "200", description = "List of posts"),
+            @OpenApiResponse(status = "400", description = "Invalid date format")
         }
     )
     public void list(Context ctx) {
         try {
-            List<Map<String, Object>> out = postsCache.get(POSTS_CACHE_KEY, key -> {
-                List<Post> posts = postService.findAll();
+            String dateParam = ctx.queryParam("date");
+            LocalDate date = null;
+            if (dateParam != null) {
+                try {
+                    date = LocalDate.parse(dateParam);
+                } catch (DateTimeParseException e) {
+                    ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, "invalid.date.format"));
+                    return;
+                }
+            }
+
+            String cacheKey = date != null ? "posts_" + date : POSTS_CACHE_KEY;
+            LocalDate finalDate = date;
+            List<Map<String, Object>> out = postsCache.get(cacheKey, key -> {
+                List<Post> posts = finalDate != null ? postService.findByDate(finalDate) : postService.findAll();
                 return posts.stream().map(p -> {
                     Map<String, Object> m = new HashMap<>();
                     m.put("id", p.getId());
@@ -121,7 +140,7 @@ public class PostController {
 
             if (content == null || content.isBlank()) { ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.EMPTY_CONTENT)); return; }
             Post p = postService.create(uid, content);
-            postsCache.invalidate(POSTS_CACHE_KEY);
+            postsCache.invalidateAll();
             Map<String, Object> out = new HashMap<>();
             out.put("id", p.getId());
             out.put(ApiConstants.Keys.CONTENT, p.getContent());
@@ -163,7 +182,7 @@ public class PostController {
             String content = (String) body.get(ApiConstants.Keys.CONTENT);
             if (content == null || content.isBlank()) { ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.EMPTY_CONTENT)); return; }
             p = postService.updateContent(id, content);
-            postsCache.invalidate(POSTS_CACHE_KEY);
+            postsCache.invalidateAll();
             Map<String, Object> out = new HashMap<>();
             out.put("id", p.getId());
             out.put(ApiConstants.Keys.CONTENT, p.getContent());
@@ -198,7 +217,7 @@ public class PostController {
             Post p = op.get();
             if (p.getAuthorId() != uid) { ctx.status(403).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.FORBIDDEN)); return; }
             postService.delete(id);
-            postsCache.invalidate(POSTS_CACHE_KEY);
+            postsCache.invalidateAll();
             ctx.status(204);
         } catch (Exception e) {
             log.error("Unexpected error in delete post", e);
