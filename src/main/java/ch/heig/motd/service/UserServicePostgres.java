@@ -8,10 +8,24 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
+/**
+ * Implementation of the UserService interface using PostgreSQL.
+ */
 public class UserServicePostgres implements UserService {
+    /**
+     * Logger for the UserServicePostgres class.
+     */
     private static final Logger log = LoggerFactory.getLogger(UserServicePostgres.class);
+
+    /**
+     * User repository for database operations.
+     */
     private final UserRepository repo;
 
+    /**
+     * Constructor.
+     * @param repo user repository
+     */
     public UserServicePostgres(UserRepository repo) {
         this.repo = repo;
     }

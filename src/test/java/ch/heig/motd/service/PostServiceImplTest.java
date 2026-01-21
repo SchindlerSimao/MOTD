@@ -1,6 +1,7 @@
 package ch.heig.motd.service;
 
 import ch.heig.motd.model.Post;
+import ch.heig.motd.model.User;
 import ch.heig.motd.repository.PostRepository;
 import ch.heig.motd.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,24 +15,25 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class PostServicePostgresTest {
+public class PostServiceImplTest {
     private PostRepository postRepo;
     private UserRepository userRepo;
-    private PostServicePostgres service;
+    private PostServiceImpl service;
 
     @BeforeEach
     public void setup() {
         postRepo = mock(PostRepository.class);
         userRepo = mock(UserRepository.class);
-        service = new PostServicePostgres(postRepo, userRepo);
+        service = new PostServiceImpl(postRepo, userRepo);
     }
 
     @Test
     public void create_delegatesToRepository() {
-        var post = new Post(1L, 42L, "test", Instant.now(), LocalDate.now());
+        Post post = new Post(1L, 42L, "test", Instant.now(), LocalDate.now());
+        when(userRepo.findById(42L)).thenReturn(Optional.of(new User(42L, "u", "h", Instant.now())));
         when(postRepo.save(42L, "test")).thenReturn(post);
 
-        var result = service.create(42L, "test");
+        Post result = service.create(42L, "test");
 
         assertEquals(post, result);
         verify(postRepo).save(42L, "test");
@@ -39,10 +41,10 @@ public class PostServicePostgresTest {
 
     @Test
     public void findById_delegatesToRepository() {
-        var post = new Post(1L, 42L, "test", Instant.now(), LocalDate.now());
+        Post post = new Post(1L, 42L, "test", Instant.now(), LocalDate.now());
         when(postRepo.findById(1L)).thenReturn(Optional.of(post));
 
-        var result = service.findById(1L);
+        Optional<Post> result = service.findById(1L);
 
         assertTrue(result.isPresent());
         assertEquals(post, result.get());
@@ -50,13 +52,13 @@ public class PostServicePostgresTest {
 
     @Test
     public void findAll_delegatesToRepository() {
-        var posts = List.of(
+        List<Post> posts = List.of(
             new Post(1L, 42L, "test1", Instant.now(), LocalDate.now()),
             new Post(2L, 43L, "test2", Instant.now(), LocalDate.now())
         );
         when(postRepo.findAll()).thenReturn(posts);
 
-        var result = service.findAll();
+        List<Post> result = service.findAll();
 
         assertEquals(2, result.size());
         assertEquals(posts, result);
@@ -71,10 +73,10 @@ public class PostServicePostgresTest {
 
     @Test
     public void updateContent_delegatesToRepository() {
-        var post = new Post(1L, 42L, "updated", Instant.now(), LocalDate.now());
+        Post post = new Post(1L, 42L, "updated", Instant.now(), LocalDate.now());
         when(postRepo.updateContent(1L, "updated")).thenReturn(post);
 
-        var result = service.updateContent(1L, "updated");
+        Post result = service.updateContent(1L, "updated");
 
         assertEquals(post, result);
         verify(postRepo).updateContent(1L, "updated");

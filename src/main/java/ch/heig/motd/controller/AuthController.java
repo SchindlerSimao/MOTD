@@ -13,18 +13,41 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 
+/**
+ * Authentication controller handling user registration, login, logout, and account deletion.
+ */
 public class AuthController {
+    /**
+     * Logger for the AuthController class.
+     */
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
+    /**
+     * Authentication service for handling auth-related operations.
+     */
     private final AuthService authService;
+
+    /**
+     * User service for handling user-related operations.
+     */
     private final UserService userService;
 
+    /**
+     * Constructor for AuthController.
+     * @param authService authentication service
+     * @param userService user service
+     */
     public AuthController(AuthService authService, UserService userService) {
         this.authService = authService;
         this.userService = userService;
     }
 
+    /**
+     * Handles user registration.
+     * @param ctx the Javalin context
+     */
     public void register(Context ctx) {
         try {
             String body = ctx.body();
@@ -62,16 +85,20 @@ public class AuthController {
         }
     }
 
+    /**
+     * Handles user login.
+     * @param ctx the Javalin context
+     */
     public void login(Context ctx) {
         try {
-            var body = ctx.bodyAsClass(Map.class);
+            Map body = ctx.bodyAsClass(Map.class);
             String username = (String) body.get(ApiConstants.Keys.USERNAME);
             String password = (String) body.get(ApiConstants.Keys.PASSWORD);
             if (username == null || password == null) {
                 ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.MISSING_USERNAME_OR_PASSWORD));
                 return;
             }
-            var ot = authService.login(username, password);
+            Optional<String> ot = authService.login(username, password);
             if (ot.isEmpty()) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.INVALID_CREDENTIALS)); return; }
             String token = ot.get();
             ctx.status(200).json(Map.of(ApiConstants.Keys.TOKEN, token));
@@ -81,6 +108,10 @@ public class AuthController {
         }
     }
 
+    /**
+     * Handles user logout.
+     * @param ctx the Javalin context
+     */
     public void logout(Context ctx) {
         try {
             final String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);
@@ -98,12 +129,16 @@ public class AuthController {
         }
     }
 
+    /**
+     * Handles user account deletion.
+     * @param ctx the Javalin context
+     */
     public void delete(Context ctx) {
         try {
             final String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);
             if (auth == null || !auth.startsWith(ApiConstants.Headers.BEARER_PREFIX)) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.MISSING_TOKEN)); return; }
             final String token = auth.substring(ApiConstants.Headers.BEARER_PREFIX.length());
-            var userIdOpt = authService.validateAndGetUserId(token);
+            java.util.Optional<Long> userIdOpt = authService.validateAndGetUserId(token);
             if (userIdOpt.isEmpty()) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.UNAUTHORIZED)); return; }
             long userId = userIdOpt.get();
             userService.delete(userId);

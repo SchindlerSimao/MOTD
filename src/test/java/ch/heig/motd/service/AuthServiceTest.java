@@ -31,29 +31,29 @@ public class AuthServiceTest {
     public void login_userNotFound_returnsEmpty() {
         when(userService.findByUsername("alice")).thenReturn(Optional.empty());
 
-        var result = authService.login("alice", "password");
+        Optional<String> result = authService.login("alice", "password");
 
         assertTrue(result.isEmpty());
     }
 
     @Test
     public void login_invalidPassword_returnsEmpty() {
-        var user = new User(1L, "alice", "hashedpw", Instant.now());
+        User user = new User(1L, "alice", "hashedpw", Instant.now());
         when(userService.findByUsername("alice")).thenReturn(Optional.of(user));
         when(userService.verifyPassword(user, "wrongpw")).thenReturn(false);
 
-        var result = authService.login("alice", "wrongpw");
+        Optional<String> result = authService.login("alice", "wrongpw");
 
         assertTrue(result.isEmpty());
     }
 
     @Test
     public void login_validCredentials_returnsToken() {
-        var user = new User(1L, "alice", "hashedpw", Instant.now());
+        User user = new User(1L, "alice", "hashedpw", Instant.now());
         when(userService.findByUsername("alice")).thenReturn(Optional.of(user));
         when(userService.verifyPassword(user, "password")).thenReturn(true);
 
-        var result = authService.login("alice", "password");
+        Optional<String> result = authService.login("alice", "password");
 
         assertTrue(result.isPresent());
         assertNotNull(result.get());
@@ -74,7 +74,7 @@ public class AuthServiceTest {
         String token = jwtProvider.createToken(42L, "alice", "jti-123");
         when(tokenStore.isRevoked("jti-123")).thenReturn(true);
 
-        var result = authService.validateAndGetUserId(token);
+        Optional<Long> result = authService.validateAndGetUserId(token);
 
         assertTrue(result.isEmpty());
     }
@@ -84,7 +84,7 @@ public class AuthServiceTest {
         String token = jwtProvider.createToken(42L, "alice", "jti-123");
         when(tokenStore.isRevoked("jti-123")).thenReturn(false);
 
-        var result = authService.validateAndGetUserId(token);
+        Optional<Long> result = authService.validateAndGetUserId(token);
 
         assertTrue(result.isPresent());
         assertEquals(42L, result.get());
@@ -92,7 +92,7 @@ public class AuthServiceTest {
 
     @Test
     public void validateAndGetUserId_invalidToken_returnsEmpty() {
-        var result = authService.validateAndGetUserId("invalid-token");
+        Optional<Long> result = authService.validateAndGetUserId("invalid-token");
 
         assertTrue(result.isEmpty());
     }

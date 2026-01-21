@@ -9,13 +9,36 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Implementation of the AuthService interface.
+ */
 public class AuthServiceImpl implements AuthService {
+    /**
+     * Logger for the AuthServiceImpl class.
+     */
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
+    /**
+     * User service for user-related operations.
+     */
     private final UserService userService;
+
+    /**
+     * Token store for managing revoked tokens.
+     */
     private final TokenStore tokenStore;
+
+    /**
+     * JWT provider for token creation and validation.
+     */
     private final JwtProvider jwtProvider;
 
+    /**
+     * Constructor.
+     * @param userService user service
+     * @param tokenStore token store
+     * @param jwtProvider JWT provider
+     */
     public AuthServiceImpl(UserService userService, TokenStore tokenStore, JwtProvider jwtProvider) {
         this.userService = userService;
         this.tokenStore = tokenStore;
@@ -25,11 +48,11 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Optional<String> login(String username, String password) {
         log.info("Login attempt for {}", username);
-        var ou = userService.findByUsername(username);
+        Optional<ch.heig.motd.model.User> ou = userService.findByUsername(username);
         if (ou.isEmpty()) { log.warn("Login failed - user not found: {}", username); return Optional.empty(); }
-        var u = ou.get();
+        ch.heig.motd.model.User u = ou.get();
         if (!userService.verifyPassword(u, password)) { log.warn("Login failed - invalid password for {}", username); return Optional.empty(); }
-        var jti = UUID.randomUUID().toString();
+        String jti = UUID.randomUUID().toString();
         String token = jwtProvider.createToken(u.getId(), u.getUsername(), jti);
         log.info("Login success for {} (jti={})", username, jti);
         return Optional.of(token);
@@ -47,7 +70,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Optional<Long> validateAndGetUserId(String token) {
         try {
-            var claims = jwtProvider.verifyToken(token);
+            com.auth0.jwt.interfaces.DecodedJWT claims = jwtProvider.verifyToken(token);
             if (claims == null) { log.warn("Invalid token"); return Optional.empty(); }
             String jti = claims.getId();
             if (isTokenRevoked(jti)) { log.warn("Token is revoked: {}", jti); return Optional.empty(); }

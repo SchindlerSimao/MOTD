@@ -12,11 +12,27 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * PostgreSQL implementation of PostRepository.
+ */
 public class PostgresPostRepository implements PostRepository {
+    /**
+     * Logger instance for logging.
+     */
     private static final Logger log = LoggerFactory.getLogger(PostgresPostRepository.class);
+
+    /**
+     * Data source for database connections.
+     */
     private final DataSource ds;
 
-    public PostgresPostRepository(DataSource ds) { this.ds = ds; }
+    /**
+     * Constructor.
+     * @param ds data source
+     */
+    public PostgresPostRepository(DataSource ds) {
+        this.ds = ds;
+    }
 
     @Override
     public Post save(long authorId, String content) {
@@ -24,7 +40,7 @@ public class PostgresPostRepository implements PostRepository {
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("INSERT INTO posts(author_id, content, created_at, display_at) VALUES (?, ?, now(), current_date + 1) RETURNING id, created_at, display_at")) {
             ps.setLong(1, authorId);
             ps.setString(2, content);
-            var rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 long id = rs.getLong("id");
                 Instant created = rs.getTimestamp("created_at").toInstant();
@@ -45,7 +61,7 @@ public class PostgresPostRepository implements PostRepository {
         log.debug("Finding post by id {}", id);
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT id, author_id, content, created_at, display_at FROM posts WHERE id = ?")) {
             ps.setLong(1, id);
-            var rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 return Optional.of(map(rs));
             }
@@ -57,7 +73,7 @@ public class PostgresPostRepository implements PostRepository {
     public List<Post> findAll() {
         log.debug("Finding all posts");
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT id, author_id, content, created_at, display_at FROM posts ORDER BY created_at DESC")) {
-            var rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
             List<Post> out = new ArrayList<>();
             while (rs.next()) out.add(map(rs));
             return out;
@@ -79,12 +95,18 @@ public class PostgresPostRepository implements PostRepository {
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement("UPDATE posts SET content = ? WHERE id = ? RETURNING id, author_id, content, created_at, display_at")) {
             ps.setString(1, content);
             ps.setLong(2, id);
-            var rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
             if (rs.next()) return map(rs);
             throw new RuntimeException("not found");
         } catch (SQLException e) { log.error("Error updating post {}", id, e); throw new RuntimeException(e); }
     }
 
+    /**
+     * Maps a ResultSet row to a Post object.
+     * @param rs result set
+     * @return mapped Post
+     * @throws SQLException if a database error occurs
+     */
     private Post map(ResultSet rs) throws SQLException {
         return new Post(rs.getLong("id"), rs.getLong("author_id"), rs.getString("content"), rs.getTimestamp("created_at").toInstant(), rs.getDate("display_at").toLocalDate());
     }

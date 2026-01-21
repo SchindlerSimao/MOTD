@@ -6,7 +6,14 @@ import com.zaxxer.hikari.HikariDataSource;
 import javax.sql.DataSource;
 import java.util.Optional;
 
+/**
+ * Database configuration utility.
+ */
 public class DbConfig {
+    /**
+     * Create a DataSource from environment variables.
+     * @return DataSource instance
+     */
     public static DataSource createFromEnv() {
         String jdbcUrl = System.getenv("JDBC_DATABASE_URL");
         if (jdbcUrl == null || jdbcUrl.isBlank()) {
@@ -27,8 +34,8 @@ public class DbConfig {
             HikariConfig cfg = new HikariConfig();
             cfg.setJdbcUrl(jdbcUrl);
             // optional user/pass from env
-            var user = System.getenv("DB_USER");
-            var pass = System.getenv("DB_PASSWORD");
+            String user = System.getenv("DB_USER");
+            String pass = System.getenv("DB_PASSWORD");
             if (user != null) cfg.setUsername(user);
             if (pass != null) cfg.setPassword(pass);
             cfg.setMaximumPoolSize(5);

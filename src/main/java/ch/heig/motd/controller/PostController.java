@@ -1,38 +1,92 @@
 package ch.heig.motd.controller;
 
 import ch.heig.motd.api.ApiConstants;
+import ch.heig.motd.dto.PostDto;
 import ch.heig.motd.model.Post;
 import ch.heig.motd.service.AuthService;
+import io.javalin.http.NotFoundResponse;
 import ch.heig.motd.service.PostService;
 import io.javalin.http.Context;
+import io.javalin.http.HandlerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Controller for managing posts.
+ */
 public class PostController {
+    /**
+     * Logger instance for logging.
+     */
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
 
+    /**
+     * Post service for handling post operations.
+     */
     private final PostService postService;
+
+    /**
+     * Authentication service for handling authentication.
+     */
     private final AuthService authService;
 
+    /**
+     * Constructor.
+     * @param postService post service
+     * @param authService authentication service
+     */
     public PostController(PostService postService, AuthService authService) {
         this.postService = postService;
         this.authService = authService;
     }
 
+    /**
+     * Require authentication for mutating requests. If authentication fails, responds with 401.
+     * Otherwise, sets the "uid" attribute in the context.
+     * @param ctx Javalin context
+     */
+    public void requireAuth(Context ctx) {
+        // only enforce for mutating HTTP methods
+        HandlerType method = ctx.method();
+        if (!(method == HandlerType.POST || method == HandlerType.PUT || method == HandlerType.DELETE)) {
+            return;
+        }
+        String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);
+        if (auth == null || !auth.startsWith(ApiConstants.Headers.BEARER_PREFIX)) {
+            ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.MISSING_TOKEN));
+            return;
+        }
+        String token = auth.substring(ApiConstants.Headers.BEARER_PREFIX.length());
+        Optional<Long> opt = authService.validateAndGetUserId(token);
+        if (opt.isEmpty()) {
+            ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.INVALID_TOKEN));
+            return;
+        }
+        ctx.attribute("uid", opt.get());
+    }
+
+    /**
+     * Lists all existing posts.
+     * @param ctx Javalin context
+     */
     public void list(Context ctx) {
         try {
             List<Post> posts = postService.findAll();
-            var out = posts.stream().map(p -> Map.of(
-                    "id", p.getId(),
-                    "authorId", p.getAuthorId(),
-                    ApiConstants.Keys.CONTENT, p.getContent(),
-                    "createdAt", p.getCreatedAt().toString(),
-                    "displayAt", p.getDisplayAt().toString()
-            )).toList();
+            List<Map<String, Object>> out = posts.stream().map(p -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", p.getId());
+                m.put("authorId", p.getAuthorId());
+                m.put(ApiConstants.Keys.CONTENT, p.getContent());
+                m.put("createdAt", p.getCreatedAt().toString());
+                m.put("displayAt", p.getDisplayAt().toString());
+                return m;
+            }).collect(Collectors.toList());
             ctx.json(out);
         } catch (Exception e) {
             log.error("Unexpected error in list posts", e);
@@ -40,57 +94,85 @@ public class PostController {
         }
     }
 
-    private Long getUserIdFromAuth(Context ctx) {
-        String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);
-        if (auth == null || !auth.startsWith(ApiConstants.Headers.BEARER_PREFIX)) return null;
-        String token = auth.substring(ApiConstants.Headers.BEARER_PREFIX.length());
-        var opt = authService.validateAndGetUserId(token);
-        return opt.orElse(null);
-    }
-
+    /**
+     * Creates a new post.
+     * @param ctx Javalin context
+     */
     public void create(Context ctx) {
         try {
-            Long uid = getUserIdFromAuth(ctx);
+            // requireAuth must have set uid attribute; enforce centralized auth
+            Long uid = ctx.attribute("uid");
             if (uid == null) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.UNAUTHORIZED)); return; }
-            var body = ctx.bodyAsClass(Map.class);
-            String content = (String) body.get(ApiConstants.Keys.CONTENT);
+
+            String content;
+            try {
+                PostDto newPost = ctx.bodyAsClass(PostDto.class);
+                if (newPost == null || newPost.content() == null) {
+                    ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.EMPTY_CONTENT));
+                    return;
+                }
+                content = newPost.content();
+            } catch (Exception e) {
+                // strict API: reject malformed or non-conforming JSON
+                log.warn("Failed to parse body as PostDto: {}", e.getMessage());
+                ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.EMPTY_CONTENT));
+                return;
+            }
+
             if (content == null || content.isBlank()) { ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.EMPTY_CONTENT)); return; }
             Post p = postService.create(uid, content);
-            ctx.status(201).json(Map.of("id", p.getId(), ApiConstants.Keys.CONTENT, p.getContent(), "authorId", p.getAuthorId()));
+            Map<String, Object> out = new HashMap<>();
+            out.put("id", p.getId());
+            out.put(ApiConstants.Keys.CONTENT, p.getContent());
+            out.put("authorId", p.getAuthorId());
+            ctx.status(201).json(out);
+        } catch (NotFoundResponse e) {
+            ctx.status(404).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.NOT_FOUND));
         } catch (Exception e) {
             log.error("Unexpected error in create post", e);
             ctx.status(500).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.INTERNAL_ERROR));
         }
     }
 
+    /**
+     * Updates an existing post.
+     * @param ctx Javalin context
+     */
     public void update(Context ctx) {
         try {
-            Long uid = getUserIdFromAuth(ctx);
+            Long uid = ctx.attribute("uid");
             if (uid == null) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.UNAUTHORIZED)); return; }
             long id = Long.parseLong(ctx.pathParam("id"));
-            var op = postService.findById(id);
+            Optional<Post> op = postService.findById(id);
             if (op.isEmpty()) { ctx.status(404).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.NOT_FOUND)); return; }
-            var p = op.get();
+            Post p = op.get();
             if (p.getAuthorId() != uid) { ctx.status(403).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.FORBIDDEN)); return; }
-            var body = ctx.bodyAsClass(Map.class);
+            Map body = ctx.bodyAsClass(Map.class);
             String content = (String) body.get(ApiConstants.Keys.CONTENT);
             if (content == null || content.isBlank()) { ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.EMPTY_CONTENT)); return; }
             p = postService.updateContent(id, content);
-            ctx.json(Map.of("id", p.getId(), ApiConstants.Keys.CONTENT, p.getContent()));
+            Map<String, Object> out = new HashMap<>();
+            out.put("id", p.getId());
+            out.put(ApiConstants.Keys.CONTENT, p.getContent());
+            ctx.json(out);
         } catch (Exception e) {
             log.error("Unexpected error in update post", e);
             ctx.status(500).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.INTERNAL_ERROR));
         }
     }
 
+    /**
+     * Deletes an existing post.
+     * @param ctx Javalin context
+     */
     public void delete(Context ctx) {
         try {
-            Long uid = getUserIdFromAuth(ctx);
+            Long uid = ctx.attribute("uid");
             if (uid == null) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.UNAUTHORIZED)); return; }
             long id = Long.parseLong(ctx.pathParam("id"));
-            var op = postService.findById(id);
+            Optional<Post> op = postService.findById(id);
             if (op.isEmpty()) { ctx.status(404).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.NOT_FOUND)); return; }
-            var p = op.get();
+            Post p = op.get();
             if (p.getAuthorId() != uid) { ctx.status(403).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.FORBIDDEN)); return; }
             postService.delete(id);
             ctx.status(204);
