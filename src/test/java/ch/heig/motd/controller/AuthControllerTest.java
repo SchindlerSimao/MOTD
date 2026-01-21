@@ -4,7 +4,7 @@ import ch.heig.motd.api.ApiConstants;
 import ch.heig.motd.dto.Credentials;
 import ch.heig.motd.service.AuthService;
 import ch.heig.motd.service.UserService;
-import ch.heig.motd.auth.JwtProvider;
+import ch.heig.motd.auth.JwtProviderInterface;
 import ch.heig.motd.api.AuthMiddleware;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.javalin.http.Context;

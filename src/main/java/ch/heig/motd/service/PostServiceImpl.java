@@ -8,6 +8,7 @@ import io.javalin.http.NotFoundResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,6 +57,9 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public List<Post> findAll() { return postRepo.findAll(); }
+
+    @Override
+    public List<Post> findByDate(LocalDate date) { return postRepo.findByDisplayDate(date); }
 
     @Override
     public void delete(long id) {

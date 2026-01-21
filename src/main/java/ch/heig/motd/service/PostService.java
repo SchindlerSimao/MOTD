@@ -2,6 +2,7 @@ package ch.heig.motd.service;
 
 import ch.heig.motd.model.Post;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +30,13 @@ public interface PostService {
      * @return list of all posts
      */
     List<Post> findAll();
+
+    /**
+     * Finds posts by display date.
+     * @param date display date
+     * @return list of posts for the given date
+     */
+    List<Post> findByDate(LocalDate date);
 
     /**
      * Deletes a post by its id.
