@@ -17,11 +17,11 @@ public final class AuthRoutes {
      * @param app the Javalin application
      * @param authController the authentication controller
      */
-    public static void register(Javalin app, AuthController authController) {
+    public static void register(Javalin app, AuthController authController, AuthMiddleware authMiddleware) {
         app.post(ApiConstants.Paths.AUTH_REGISTER, authController::register);
         app.post(ApiConstants.Paths.AUTH_LOGIN, authController::login);
         app.post(ApiConstants.Paths.AUTH_LOGOUT, authController::logout);
+        app.before(ApiConstants.Paths.AUTH_DELETE, authMiddleware::requireAuth);
         app.delete(ApiConstants.Paths.AUTH_DELETE, authController::delete);
     }
 }
-

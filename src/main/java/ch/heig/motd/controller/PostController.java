@@ -7,7 +7,6 @@ import ch.heig.motd.service.AuthService;
 import io.javalin.http.NotFoundResponse;
 import ch.heig.motd.service.PostService;
 import io.javalin.http.Context;
-import io.javalin.http.HandlerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,31 +43,6 @@ public class PostController {
     public PostController(PostService postService, AuthService authService) {
         this.postService = postService;
         this.authService = authService;
-    }
-
-    /**
-     * Require authentication for mutating requests. If authentication fails, responds with 401.
-     * Otherwise, sets the "uid" attribute in the context.
-     * @param ctx Javalin context
-     */
-    public void requireAuth(Context ctx) {
-        // only enforce for mutating HTTP methods
-        HandlerType method = ctx.method();
-        if (!(method == HandlerType.POST || method == HandlerType.PUT || method == HandlerType.DELETE)) {
-            return;
-        }
-        String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);
-        if (auth == null || !auth.startsWith(ApiConstants.Headers.BEARER_PREFIX)) {
-            ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.MISSING_TOKEN));
-            return;
-        }
-        String token = auth.substring(ApiConstants.Headers.BEARER_PREFIX.length());
-        Optional<Long> opt = authService.validateAndGetUserId(token);
-        if (opt.isEmpty()) {
-            ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.INVALID_TOKEN));
-            return;
-        }
-        ctx.attribute("uid", opt.get());
     }
 
     /**
