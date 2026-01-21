@@ -111,6 +111,7 @@ public class AuthController {
         methods = HttpMethod.POST,
         summary = "Logout",
         tags = {"Auth"},
+        security = @OpenApiSecurity(name = "bearerAuth"),
         responses = {
             @OpenApiResponse(status = "200", description = "Logged out"),
             @OpenApiResponse(status = "401", description = "Unauthorized")
@@ -138,6 +139,7 @@ public class AuthController {
         methods = HttpMethod.DELETE,
         summary = "Delete account",
         tags = {"Auth"},
+        security = @OpenApiSecurity(name = "bearerAuth"),
         responses = {
             @OpenApiResponse(status = "204", description = "Account deleted"),
             @OpenApiResponse(status = "401", description = "Unauthorized")

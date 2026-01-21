@@ -80,6 +80,7 @@ public class PostController {
         methods = HttpMethod.POST,
         summary = "Create a post",
         tags = {"Posts"},
+        security = @OpenApiSecurity(name = "bearerAuth"),
         requestBody = @OpenApiRequestBody(content = @OpenApiContent(from = PostDto.class)),
         responses = {
             @OpenApiResponse(status = "201", description = "Post created"),
@@ -126,6 +127,7 @@ public class PostController {
         methods = HttpMethod.PUT,
         summary = "Update a post",
         tags = {"Posts"},
+        security = @OpenApiSecurity(name = "bearerAuth"),
         pathParams = @OpenApiParam(name = "id", type = Long.class, description = "Post ID"),
         requestBody = @OpenApiRequestBody(content = @OpenApiContent(from = PostDto.class)),
         responses = {
@@ -163,6 +165,7 @@ public class PostController {
         methods = HttpMethod.DELETE,
         summary = "Delete a post",
         tags = {"Posts"},
+        security = @OpenApiSecurity(name = "bearerAuth"),
         pathParams = @OpenApiParam(name = "id", type = Long.class, description = "Post ID"),
         responses = {
             @OpenApiResponse(status = "204", description = "Post deleted"),

@@ -15,7 +15,9 @@ import ch.heig.motd.service.UserServicePostgres;
 import ch.heig.motd.auth.JwtProvider;
 import io.javalin.Javalin;
 import io.javalin.openapi.plugin.OpenApiPlugin;
+import io.javalin.openapi.plugin.SecurityComponentConfiguration;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
+import io.javalin.openapi.BearerAuth;
 
 import javax.sql.DataSource;
 
@@ -44,6 +46,8 @@ public class App {
                 pluginConfig.withDocumentationPath("/openapi");
                 pluginConfig.withDefinitionConfiguration((version, definition) -> {
                     definition.withOpenApiInfo(info -> info.setTitle("MOTD API"));
+                    definition.withSecurity(new SecurityComponentConfiguration()
+                        .withSecurityScheme("bearerAuth", new BearerAuth()));
                 });
             }));
             config.registerPlugin(new SwaggerPlugin(swaggerConfig -> {
