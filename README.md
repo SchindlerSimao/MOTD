@@ -79,12 +79,26 @@ curl -X POST https://motd.cstef.dev/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username": "alice", "password": "secret123"}'
 ```
+response:
+```json
+{
+  "username": "alice",
+  "createdAt": "2026-01-21T19:31:47.582951779Z",
+  "id": 6
+}
+```
 
 **login:**
 ```bash
 curl -X POST https://motd.cstef.dev/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": "alice", "password": "secret123"}'
+```
+response:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
 ```
 
 **create a post (requires authentication):**
@@ -94,18 +108,51 @@ curl -X POST https://motd.cstef.dev/posts \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{"content": "hello world!"}'
 ```
+response:
+```json
+{
+  "id": 5,
+  "content": "hello world!",
+  "authorId": 5
+}
+```
 
 **get all posts:**
 ```bash
 curl https://motd.cstef.dev/posts
+```
+response:
+```json
+[
+  {
+    "createdAt": "2026-01-21T18:29:44.333410Z",
+    "displayAt": "2026-01-22",
+    "id": 5,
+    "authorId": 5,
+    "content": "hello world!"
+  },
+  {
+    "createdAt": "2026-01-21T15:10:48.301862Z",
+    "displayAt": "2026-01-22",
+    "id": 3,
+    "authorId": 3,
+    "content": "bonjour, monde!"
+  }
+]
 ```
 
 **swagger ui:**
 
 the swagger ui is available at `https://motd.cstef.dev`
 
+**traefik dashboard:**
 
-## vm creation
+the traefik dashboard is enabled for monitoring and debugging. it's accessible at `https://motd.cstef.dev` on port 8080 (configure domain/authentication as needed for production).
+
+
+## deployment
+
+### vm creation
 
 we used an azure vm to host our web application. we followed the steps described in the
 [course material](https://github.com/heig-vd-dai-course/heig-vd-dai-course/blob/main/11.03-ssh-and-scp/01-course-material/README.md),
@@ -115,7 +162,7 @@ the teaching staff public key
 `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF5deyMbQaRaiO4ojymkCoWBtwPyG8Y+4BbLQsb413KC heig-vd-dai-course`
 was added to the vm for ssh access.
 
-## dns configuration
+### dns configuration
 
 the domain `motd.cstef.dev` is managed via cloudflare dns.
 
@@ -127,6 +174,47 @@ motd.cstef.dev.		300	IN	A	20.251.197.5
 - **type:** A record pointing to the azure vm public ip
 - **ttl:** 300 seconds (5 minutes)
 - **nameservers:** cloudflare (`ignat.ns.cloudflare.com`, `tegan.ns.cloudflare.com`)
+
+### deployment steps
+
+1. **install docker on the vm:**
+   ```bash
+   # follow official docker installation for ubuntu
+   # add user to docker group to run without sudo
+   sudo usermod -aG docker $USER
+   ```
+
+2. **set up traefik reverse proxy:**
+   ```bash
+   # create traefik directory and network
+   docker network create traefik-public
+   
+   # start traefik with docker-compose.traefik.yml
+   docker compose -f docker-compose.traefik.yml up -d
+   ```
+
+3. **deploy the application:**
+   ```bash
+   # copy docker-compose.yml to the vm
+   # configure environment variables (JWT_SECRET, etc.)
+   
+   # start the application stack (database, migrations, app)
+   docker compose up -d
+   ```
+
+4. **verify deployment:**
+   ```bash
+   # check running containers
+   docker ps
+   
+   # check application logs
+   docker compose logs -f app
+   
+   # test the api
+   curl https://motd.cstef.dev/posts
+   ```
+
+the application uses github container registry (ghcr.io) for docker images. images are automatically built and published via github actions on push to master.
 
 
 ---
