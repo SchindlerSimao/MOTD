@@ -26,6 +26,21 @@ developed by Colin Stefani and Simão Romano Schindler, as part of the teaching 
 - `GET /posts` responses are cached in-memory using caffeine
 - cache expires after 60 seconds or is invalidated on create/update/delete
 
+#### validation caching model
+the api implements http conditional requests for optimized bandwidth and concurrency control:
+
+**conditional GET (`If-Modified-Since`)**:
+- `GET /posts` returns a `Last-Modified` header with the timestamp of the last modification
+- clients can send `If-Modified-Since` header with subsequent requests
+- if content hasn't changed, server returns `304 Not Modified` with no body
+- reduces bandwidth and improves performance
+
+**optimistic concurrency control (`If-Unmodified-Since`)**:
+- `PUT /posts/{id}` and `DELETE /posts/{id}` accept `If-Unmodified-Since` header
+- if the resource was modified after the provided timestamp, server returns `412 Precondition Failed`
+- prevents lost updates when multiple clients edit the same post
+- implemented using `ConcurrentHashMap<String, Instant>` to track modification times
+
 ---
 
 ## installation
@@ -55,7 +70,8 @@ mvn clean package
 
 start all services (database, migrations, and application):
 ```bash
-docker-compose up --build
+cd app
+docker compose up
 ```
 
 the api will be available at `http://localhost:7000`
@@ -88,19 +104,27 @@ response:
 }
 ```
 
+Output: 
+```json
+{
+  "username": "alice",
+  "id": 9,
+  "createdAt": "2026-01-21T18:54:51.171834299Z"
+}
+```
+
 **login:**
 ```bash
 curl -X POST https://motd.cstef.dev/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": "alice", "password": "secret123"}'
 ```
-response:
+Output:
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5IiwidXNlcm5hbWUiOiJhbGljZSIsImlhdCI6MTc2OTAyMTcxOCwiZXhwIjoxNzY5MTA4MTE4LCJqdGkiOiJiZmQzM2IyNC03NWFlLTRlN2EtYjgwMi04OTZiYjhjNjQ0NTYifQ.uhhepJ6SNjT7vRjXWHwxAg7QLgY2thGHMyoy1RyV_4E"
 }
 ```
-
 **create a post (requires authentication):**
 ```bash
 curl -X POST https://motd.cstef.dev/posts \
@@ -108,12 +132,12 @@ curl -X POST https://motd.cstef.dev/posts \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{"content": "hello world!"}'
 ```
-response:
+Output:
 ```json
 {
-  "id": 5,
-  "content": "hello world!",
-  "authorId": 5
+  "id": 45,
+  "authorId": 9,
+  "content": "ça marche..."
 }
 ```
 
@@ -121,22 +145,22 @@ response:
 ```bash
 curl https://motd.cstef.dev/posts
 ```
-response:
+Output:
 ```json
 [
   {
-    "createdAt": "2026-01-21T18:29:44.333410Z",
+    "createdAt": "2026-01-21T18:56:21.847995Z",
     "displayAt": "2026-01-22",
-    "id": 5,
-    "authorId": 5,
-    "content": "hello world!"
+    "id": 45,
+    "authorId": 9,
+    "content": "ça marche..."
   },
   {
-    "createdAt": "2026-01-21T15:10:48.301862Z",
+    "createdAt": "2026-01-21T18:56:11.427983Z",
     "displayAt": "2026-01-22",
-    "id": 3,
-    "authorId": 3,
-    "content": "bonjour, monde!"
+    "id": 44,
+    "authorId": 9,
+    "content": "ça marche... plus ou moins"
   }
 ]
 ```
@@ -144,6 +168,7 @@ response:
 **swagger ui:**
 
 the swagger ui is available at `https://motd.cstef.dev`
+![Swagger UI](assets/swagger_ui.png)
 
 **traefik dashboard:**
 
