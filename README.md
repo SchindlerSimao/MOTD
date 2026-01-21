@@ -26,6 +26,21 @@ developed by Colin Stefani and Simão Romano Schindler, as part of the teaching 
 - `GET /posts` responses are cached in-memory using caffeine
 - cache expires after 60 seconds or is invalidated on create/update/delete
 
+#### validation caching model
+the api implements http conditional requests for optimized bandwidth and concurrency control:
+
+**conditional GET (`If-Modified-Since`)**:
+- `GET /posts` returns a `Last-Modified` header with the timestamp of the last modification
+- clients can send `If-Modified-Since` header with subsequent requests
+- if content hasn't changed, server returns `304 Not Modified` with no body
+- reduces bandwidth and improves performance
+
+**optimistic concurrency control (`If-Unmodified-Since`)**:
+- `PUT /posts/{id}` and `DELETE /posts/{id}` accept `If-Unmodified-Since` header
+- if the resource was modified after the provided timestamp, server returns `412 Precondition Failed`
+- prevents lost updates when multiple clients edit the same post
+- implemented using `ConcurrentHashMap<String, Instant>` to track modification times
+
 ---
 
 ## installation

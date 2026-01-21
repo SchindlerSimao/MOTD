@@ -15,12 +15,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -32,6 +37,9 @@ public class PostController {
      */
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
     private static final String POSTS_CACHE_KEY = "all_posts";
+    private static final DateTimeFormatter HTTP_DATE_FORMATTER = 
+        DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'")
+            .withZone(ZoneId.of("GMT"));
 
     private final PostService postService;
 
@@ -40,6 +48,12 @@ public class PostController {
      */
     private final AuthService authService;
     private final Cache<String, List<Map<String, Object>>> postsCache;
+    
+    /**
+     * Tracks last modification time for posts collection and individual posts.
+     * Key: "all" for collection, or post ID as string for individual posts.
+     */
+    private final Map<String, Instant> lastModified = new ConcurrentHashMap<>();
 
     /**
      * Constructor.
@@ -85,6 +99,21 @@ public class PostController {
                 }
             }
 
+            String ifModifiedSinceHeader = ctx.header("If-Modified-Since");
+            Instant collectionLastModified = lastModified.get("all");
+            
+            if (ifModifiedSinceHeader != null && collectionLastModified != null) {
+                try {
+                    ZonedDateTime ifModifiedSince = ZonedDateTime.parse(ifModifiedSinceHeader, HTTP_DATE_FORMATTER);
+                    if (!collectionLastModified.isAfter(ifModifiedSince.toInstant())) {
+                        ctx.status(304);
+                        return;
+                    }
+                } catch (DateTimeParseException e) {
+                    log.warn("Invalid If-Modified-Since header: {}", ifModifiedSinceHeader);
+                }
+            }
+
             String cacheKey = date != null ? "posts_" + date : POSTS_CACHE_KEY;
             LocalDate finalDate = date;
             List<Map<String, Object>> out = postsCache.get(cacheKey, key -> {
@@ -99,6 +128,11 @@ public class PostController {
                     return m;
                 }).collect(Collectors.toList());
             });
+            
+            if (collectionLastModified != null) {
+                ctx.header("Last-Modified", HTTP_DATE_FORMATTER.format(collectionLastModified));
+            }
+            
             ctx.json(out);
         } catch (Exception e) {
             log.error("Unexpected error in list posts", e);
@@ -140,7 +174,12 @@ public class PostController {
 
             if (content == null || content.isBlank()) { ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.EMPTY_CONTENT)); return; }
             Post p = postService.create(uid, content);
+            
+            Instant now = Instant.now();
+            lastModified.put(String.valueOf(p.getId()), now);
+            lastModified.put("all", now);
             postsCache.invalidateAll();
+            
             Map<String, Object> out = new HashMap<>();
             out.put("id", p.getId());
             out.put(ApiConstants.Keys.CONTENT, p.getContent());
@@ -178,11 +217,32 @@ public class PostController {
             if (op.isEmpty()) { ctx.status(404).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.NOT_FOUND)); return; }
             Post p = op.get();
             if (p.getAuthorId() != uid) { ctx.status(403).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.FORBIDDEN)); return; }
+            
+            String ifUnmodifiedSinceHeader = ctx.header("If-Unmodified-Since");
+            Instant postLastModified = lastModified.get(String.valueOf(id));
+            
+            if (ifUnmodifiedSinceHeader != null && postLastModified != null) {
+                try {
+                    ZonedDateTime ifUnmodifiedSince = ZonedDateTime.parse(ifUnmodifiedSinceHeader, HTTP_DATE_FORMATTER);
+                    if (postLastModified.isAfter(ifUnmodifiedSince.toInstant())) {
+                        ctx.status(412).json(Map.of(ApiConstants.Keys.ERROR, "precondition.failed"));
+                        return;
+                    }
+                } catch (DateTimeParseException e) {
+                    log.warn("Invalid If-Unmodified-Since header: {}", ifUnmodifiedSinceHeader);
+                }
+            }
+            
             Map body = ctx.bodyAsClass(Map.class);
             String content = (String) body.get(ApiConstants.Keys.CONTENT);
             if (content == null || content.isBlank()) { ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.EMPTY_CONTENT)); return; }
             p = postService.updateContent(id, content);
+            
+            Instant now = Instant.now();
+            lastModified.put(String.valueOf(id), now);
+            lastModified.put("all", now);
             postsCache.invalidateAll();
+            
             Map<String, Object> out = new HashMap<>();
             out.put("id", p.getId());
             out.put(ApiConstants.Keys.CONTENT, p.getContent());
@@ -216,8 +276,29 @@ public class PostController {
             if (op.isEmpty()) { ctx.status(404).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.NOT_FOUND)); return; }
             Post p = op.get();
             if (p.getAuthorId() != uid) { ctx.status(403).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.FORBIDDEN)); return; }
+            
+            String ifUnmodifiedSinceHeader = ctx.header("If-Unmodified-Since");
+            Instant postLastModified = lastModified.get(String.valueOf(id));
+            
+            if (ifUnmodifiedSinceHeader != null && postLastModified != null) {
+                try {
+                    ZonedDateTime ifUnmodifiedSince = ZonedDateTime.parse(ifUnmodifiedSinceHeader, HTTP_DATE_FORMATTER);
+                    if (postLastModified.isAfter(ifUnmodifiedSince.toInstant())) {
+                        ctx.status(412).json(Map.of(ApiConstants.Keys.ERROR, "precondition.failed"));
+                        return;
+                    }
+                } catch (DateTimeParseException e) {
+                    log.warn("Invalid If-Unmodified-Since header: {}", ifUnmodifiedSinceHeader);
+                }
+            }
+            
             postService.delete(id);
+            
+            Instant now = Instant.now();
+            lastModified.remove(String.valueOf(id));
+            lastModified.put("all", now);
             postsCache.invalidateAll();
+            
             ctx.status(204);
         } catch (Exception e) {
             log.error("Unexpected error in delete post", e);
