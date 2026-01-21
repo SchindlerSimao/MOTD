@@ -12,11 +12,27 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * PostgreSQL implementation of PostRepository.
+ */
 public class PostgresPostRepository implements PostRepository {
+    /**
+     * Logger instance for logging.
+     */
     private static final Logger log = LoggerFactory.getLogger(PostgresPostRepository.class);
+
+    /**
+     * Data source for database connections.
+     */
     private final DataSource ds;
 
-    public PostgresPostRepository(DataSource ds) { this.ds = ds; }
+    /**
+     * Constructor.
+     * @param ds data source
+     */
+    public PostgresPostRepository(DataSource ds) {
+        this.ds = ds;
+    }
 
     @Override
     public Post save(long authorId, String content) {
@@ -85,6 +101,12 @@ public class PostgresPostRepository implements PostRepository {
         } catch (SQLException e) { log.error("Error updating post {}", id, e); throw new RuntimeException(e); }
     }
 
+    /**
+     * Maps a ResultSet row to a Post object.
+     * @param rs result set
+     * @return mapped Post
+     * @throws SQLException if a database error occurs
+     */
     private Post map(ResultSet rs) throws SQLException {
         return new Post(rs.getLong("id"), rs.getLong("author_id"), rs.getString("content"), rs.getTimestamp("created_at").toInstant(), rs.getDate("display_at").toLocalDate());
     }

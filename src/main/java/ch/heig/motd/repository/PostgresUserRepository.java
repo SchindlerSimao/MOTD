@@ -9,10 +9,24 @@ import java.sql.*;
 import java.time.Instant;
 import java.util.Optional;
 
+/**
+ * PostgreSQL implementation of UserRepository.
+ */
 public class PostgresUserRepository implements UserRepository {
+    /**
+     * Logger instance for logging.
+     */
     private static final Logger log = LoggerFactory.getLogger(PostgresUserRepository.class);
+
+    /**
+     * Data source for database connections.
+     */
     private final DataSource ds;
 
+    /**
+     * Constructor.
+     * @param ds data source
+     */
     public PostgresUserRepository(DataSource ds) { this.ds = ds; }
 
     @Override
@@ -59,6 +73,12 @@ public class PostgresUserRepository implements UserRepository {
         } catch (SQLException e) { log.error("Error deleting user {}", id, e); throw new RuntimeException(e); }
     }
 
+    /**
+     * Maps a ResultSet row to a User object.
+     * @param rs result set
+     * @return mapped user
+     * @throws SQLException if a database error occurs
+     */
     private User map(ResultSet rs) throws SQLException {
         return new User(rs.getLong("id"), rs.getString("username"), rs.getString("password_hash"), rs.getTimestamp("created_at").toInstant());
     }

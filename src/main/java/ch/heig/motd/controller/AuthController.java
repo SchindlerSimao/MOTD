@@ -15,17 +15,39 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Authentication controller handling user registration, login, logout, and account deletion.
+ */
 public class AuthController {
+    /**
+     * Logger for the AuthController class.
+     */
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
+    /**
+     * Authentication service for handling auth-related operations.
+     */
     private final AuthService authService;
+
+    /**
+     * User service for handling user-related operations.
+     */
     private final UserService userService;
 
+    /**
+     * Constructor for AuthController.
+     * @param authService authentication service
+     * @param userService user service
+     */
     public AuthController(AuthService authService, UserService userService) {
         this.authService = authService;
         this.userService = userService;
     }
 
+    /**
+     * Handles user registration.
+     * @param ctx the Javalin context
+     */
     public void register(Context ctx) {
         try {
             String body = ctx.body();
@@ -63,6 +85,10 @@ public class AuthController {
         }
     }
 
+    /**
+     * Handles user login.
+     * @param ctx the Javalin context
+     */
     public void login(Context ctx) {
         try {
             Map body = ctx.bodyAsClass(Map.class);
@@ -82,6 +108,10 @@ public class AuthController {
         }
     }
 
+    /**
+     * Handles user logout.
+     * @param ctx the Javalin context
+     */
     public void logout(Context ctx) {
         try {
             final String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);
@@ -99,6 +129,10 @@ public class AuthController {
         }
     }
 
+    /**
+     * Handles user account deletion.
+     * @param ctx the Javalin context
+     */
     public void delete(Context ctx) {
         try {
             final String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);

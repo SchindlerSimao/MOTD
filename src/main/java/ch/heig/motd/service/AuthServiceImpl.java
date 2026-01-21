@@ -9,13 +9,36 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Implementation of the AuthService interface.
+ */
 public class AuthServiceImpl implements AuthService {
+    /**
+     * Logger for the AuthServiceImpl class.
+     */
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
+    /**
+     * User service for user-related operations.
+     */
     private final UserService userService;
+
+    /**
+     * Token store for managing revoked tokens.
+     */
     private final TokenStore tokenStore;
+
+    /**
+     * JWT provider for token creation and validation.
+     */
     private final JwtProvider jwtProvider;
 
+    /**
+     * Constructor.
+     * @param userService user service
+     * @param tokenStore token store
+     * @param jwtProvider JWT provider
+     */
     public AuthServiceImpl(UserService userService, TokenStore tokenStore, JwtProvider jwtProvider) {
         this.userService = userService;
         this.tokenStore = tokenStore;

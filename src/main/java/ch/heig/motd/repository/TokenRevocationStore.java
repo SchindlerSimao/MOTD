@@ -4,7 +4,13 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * In-memory implementation of a token revocation store.
+ */
 public class TokenRevocationStore implements TokenStore {
+    /**
+     * Map to store revoked token IDs (jti) and their expiration instants.
+     */
     private final Map<String, Instant> revoked = new ConcurrentHashMap<>();
 
     @Override

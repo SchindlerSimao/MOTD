@@ -1,8 +1,17 @@
 package ch.heig.motd.api;
 
+/**
+ * Holds every constant used in the API (paths, keys, headers, error codes).
+ */
 public final class ApiConstants {
+    /**
+     * Private constructor to prevent instantiation.
+     */
     private ApiConstants() {}
 
+    /**
+     * Holds every API path.
+     */
     public static final class Paths {
         private Paths() {}
         public static final String AUTH = "/auth";
@@ -15,6 +24,9 @@ public final class ApiConstants {
         public static final String POST_WITH_ID = POSTS + "/{id}";
     }
 
+    /**
+     * Holds every key used in JSON bodies.
+     */
     public static final class Keys {
         private Keys() {}
         public static final String USERNAME = "username";
@@ -24,12 +36,18 @@ public final class ApiConstants {
         public static final String ERROR = "error";
     }
 
+    /**
+     * Holds every header used in the API.
+     */
     public static final class Headers {
         private Headers() {}
         public static final String AUTHORIZATION = "Authorization";
         public static final String BEARER_PREFIX = "Bearer ";
     }
 
+    /**
+     * Holds every error code used in the API.
+     */
     public static final class Errors {
         private Errors() {}
         public static final String MISSING_USERNAME_OR_PASSWORD = "missing.username.or.password";

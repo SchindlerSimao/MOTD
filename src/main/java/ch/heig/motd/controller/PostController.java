@@ -17,18 +17,40 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Controller for managing posts.
+ */
 public class PostController {
+    /**
+     * Logger instance for logging.
+     */
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
 
+    /**
+     * Post service for handling post operations.
+     */
     private final PostService postService;
+
+    /**
+     * Authentication service for handling authentication.
+     */
     private final AuthService authService;
 
+    /**
+     * Constructor.
+     * @param postService post service
+     * @param authService authentication service
+     */
     public PostController(PostService postService, AuthService authService) {
         this.postService = postService;
         this.authService = authService;
     }
 
-    // before-handler to require authentication for mutating endpoints
+    /**
+     * Require authentication for mutating requests. If authentication fails, responds with 401.
+     * Otherwise, sets the "uid" attribute in the context.
+     * @param ctx Javalin context
+     */
     public void requireAuth(Context ctx) {
         // only enforce for mutating HTTP methods
         HandlerType method = ctx.method();
@@ -49,6 +71,10 @@ public class PostController {
         ctx.attribute("uid", opt.get());
     }
 
+    /**
+     * Lists all existing posts.
+     * @param ctx Javalin context
+     */
     public void list(Context ctx) {
         try {
             List<Post> posts = postService.findAll();
@@ -68,6 +94,10 @@ public class PostController {
         }
     }
 
+    /**
+     * Creates a new post.
+     * @param ctx Javalin context
+     */
     public void create(Context ctx) {
         try {
             // requireAuth must have set uid attribute; enforce centralized auth
@@ -104,6 +134,10 @@ public class PostController {
         }
     }
 
+    /**
+     * Updates an existing post.
+     * @param ctx Javalin context
+     */
     public void update(Context ctx) {
         try {
             Long uid = ctx.attribute("uid");
@@ -127,6 +161,10 @@ public class PostController {
         }
     }
 
+    /**
+     * Deletes an existing post.
+     * @param ctx Javalin context
+     */
     public void delete(Context ctx) {
         try {
             Long uid = ctx.attribute("uid");

@@ -15,16 +15,16 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class PostServicePostgresTest {
+public class PostServiceImplTest {
     private PostRepository postRepo;
     private UserRepository userRepo;
-    private PostServicePostgres service;
+    private PostServiceImpl service;
 
     @BeforeEach
     public void setup() {
         postRepo = mock(PostRepository.class);
         userRepo = mock(UserRepository.class);
-        service = new PostServicePostgres(postRepo, userRepo);
+        service = new PostServiceImpl(postRepo, userRepo);
     }
 
     @Test

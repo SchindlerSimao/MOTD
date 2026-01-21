@@ -9,7 +9,7 @@ import ch.heig.motd.repository.TokenRevocationStore;
 import ch.heig.motd.service.AuthService;
 import ch.heig.motd.service.AuthServiceImpl;
 import ch.heig.motd.service.PostService;
-import ch.heig.motd.service.PostServicePostgres;
+import ch.heig.motd.service.PostServiceImpl;
 import ch.heig.motd.service.UserService;
 import ch.heig.motd.service.UserServicePostgres;
 import ch.heig.motd.auth.JwtProvider;
@@ -17,7 +17,14 @@ import io.javalin.Javalin;
 
 import javax.sql.DataSource;
 
+/**
+ * Entry point of the MOTD API server.
+ */
 public class App {
+    /**
+     * Main method to start the server.
+     * @param args command line arguments
+     */
     public static void main(String[] args) {
         DataSource ds = DbConfig.createFromEnv();
 
@@ -25,7 +32,7 @@ public class App {
         PostgresPostRepository pgPost = new PostgresPostRepository(ds);
 
         UserService userService = new UserServicePostgres(pgUser);
-        PostService postService = new PostServicePostgres(pgPost, pgUser);
+        PostService postService = new PostServiceImpl(pgPost, pgUser);
 
         TokenRevocationStore tokenStore = new TokenRevocationStore();
         AuthService authService = new AuthServiceImpl(userService, tokenStore, JwtProvider.defaultProvider());

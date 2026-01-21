@@ -11,12 +11,31 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Optional;
 
-public class PostServicePostgres implements PostService {
-    private static final Logger log = LoggerFactory.getLogger(PostServicePostgres.class);
+/**
+ * Implementation of PostService.
+ */
+public class PostServiceImpl implements PostService {
+    /**
+     * Logger instance for logging.
+     */
+    private static final Logger log = LoggerFactory.getLogger(PostServiceImpl.class);
+
+    /**
+     * Post repository for data access.
+     */
     private final PostRepository postRepo;
+
+    /**
+     * User repository for data access.
+     */
     private final UserRepository userRepo;
 
-    public PostServicePostgres(PostRepository postRepo, UserRepository userRepo) {
+    /**
+     * Constructor.
+     * @param postRepo post repository
+     * @param userRepo user repository
+     */
+    public PostServiceImpl(PostRepository postRepo, UserRepository userRepo) {
         this.postRepo = postRepo;
         this.userRepo = userRepo;
     }
