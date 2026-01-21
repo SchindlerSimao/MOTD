@@ -19,8 +19,8 @@ public final class Routes {
      * @param authController the controller handling authentication
      * @param postController the controller handling post operations
      */
-    public static void register(Javalin app, AuthController authController, PostController postController) {
-        AuthRoutes.register(app, authController);
-        PostRoutes.register(app, postController);
+    public static void register(Javalin app, AuthController authController, PostController postController, AuthMiddleware authMiddleware) {
+        AuthRoutes.register(app, authController, authMiddleware);
+        PostRoutes.register(app, postController, authMiddleware);
     }
 }

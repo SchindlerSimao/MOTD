@@ -60,8 +60,11 @@ public class App {
         AuthController authController = new AuthController(authService, userService);
         PostController postController = new PostController(postService, authService);
 
+        // middleware
+        AuthMiddleware authMiddleware = new AuthMiddleware(authService);
+
         // register routes centrally
-        Routes.register(app, authController, postController);
+        Routes.register(app, authController, postController, authMiddleware);
 
         System.out.println("MOTD server started on http://localhost:7000 (useDb=true)");
     }

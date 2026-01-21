@@ -4,70 +4,101 @@ import ch.heig.motd.api.ApiConstants;
 import ch.heig.motd.dto.PostDto;
 import ch.heig.motd.model.Post;
 import ch.heig.motd.service.AuthService;
-import io.javalin.http.NotFoundResponse;
 import ch.heig.motd.service.PostService;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.javalin.http.Context;
 import io.javalin.http.HandlerType;
+import io.javalin.http.NotFoundResponse;
 import io.javalin.openapi.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Controller for managing posts.
+ */
 public class PostController {
+    /**
+     * Logger instance for logging.
+     */
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
-    private final PostService postService;
-    private final AuthService authService;
+    private static final String POSTS_CACHE_KEY = "all_posts";
 
+    private final PostService postService;
+
+    /**
+     * Authentication service for handling authentication.
+     */
+    private final AuthService authService;
+    private final Cache<String, List<Map<String, Object>>> postsCache;
+
+    /**
+     * Constructor.
+     * @param postService post service
+     * @param authService authentication service
+     */
     public PostController(PostService postService, AuthService authService) {
         this.postService = postService;
         this.authService = authService;
+        this.postsCache = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofSeconds(60))
+            .maximumSize(100)
+            .build();
     }
 
-    public void requireAuth(Context ctx) {
-        HandlerType method = ctx.method();
-        if (!(method == HandlerType.POST || method == HandlerType.PUT || method == HandlerType.DELETE)) {
-            return;
-        }
-        String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);
-        if (auth == null || !auth.startsWith(ApiConstants.Headers.BEARER_PREFIX)) {
-            ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.MISSING_TOKEN));
-            return;
-        }
-        String token = auth.substring(ApiConstants.Headers.BEARER_PREFIX.length());
-        Optional<Long> opt = authService.validateAndGetUserId(token);
-        if (opt.isEmpty()) {
-            ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.INVALID_TOKEN));
-            return;
-        }
-        ctx.attribute("uid", opt.get());
-    }
-
+    /**
+     * Lists all existing posts.
+     * @param ctx Javalin context
+     */
     @OpenApi(
         path = "/posts",
         methods = HttpMethod.GET,
         summary = "List all posts",
         tags = {"Posts"},
+        queryParams = {
+            @OpenApiParam(name = "date", description = "Filter by display date (yyyy-mm-dd)", required = false)
+        },
         responses = {
-            @OpenApiResponse(status = "200", description = "List of posts")
+            @OpenApiResponse(status = "200", description = "List of posts"),
+            @OpenApiResponse(status = "400", description = "Invalid date format")
         }
     )
     public void list(Context ctx) {
         try {
-            List<Post> posts = postService.findAll();
-            List<Map<String, Object>> out = posts.stream().map(p -> {
-                Map<String, Object> m = new HashMap<>();
-                m.put("id", p.getId());
-                m.put("authorId", p.getAuthorId());
-                m.put(ApiConstants.Keys.CONTENT, p.getContent());
-                m.put("createdAt", p.getCreatedAt().toString());
-                m.put("displayAt", p.getDisplayAt().toString());
-                return m;
-            }).collect(Collectors.toList());
+            String dateParam = ctx.queryParam("date");
+            LocalDate date = null;
+            if (dateParam != null) {
+                try {
+                    date = LocalDate.parse(dateParam);
+                } catch (DateTimeParseException e) {
+                    ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, "invalid.date.format"));
+                    return;
+                }
+            }
+
+            String cacheKey = date != null ? "posts_" + date : POSTS_CACHE_KEY;
+            LocalDate finalDate = date;
+            List<Map<String, Object>> out = postsCache.get(cacheKey, key -> {
+                List<Post> posts = finalDate != null ? postService.findByDate(finalDate) : postService.findAll();
+                return posts.stream().map(p -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", p.getId());
+                    m.put("authorId", p.getAuthorId());
+                    m.put(ApiConstants.Keys.CONTENT, p.getContent());
+                    m.put("createdAt", p.getCreatedAt().toString());
+                    m.put("displayAt", p.getDisplayAt().toString());
+                    return m;
+                }).collect(Collectors.toList());
+            });
             ctx.json(out);
         } catch (Exception e) {
             log.error("Unexpected error in list posts", e);
@@ -109,6 +140,7 @@ public class PostController {
 
             if (content == null || content.isBlank()) { ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.EMPTY_CONTENT)); return; }
             Post p = postService.create(uid, content);
+            postsCache.invalidateAll();
             Map<String, Object> out = new HashMap<>();
             out.put("id", p.getId());
             out.put(ApiConstants.Keys.CONTENT, p.getContent());
@@ -150,6 +182,7 @@ public class PostController {
             String content = (String) body.get(ApiConstants.Keys.CONTENT);
             if (content == null || content.isBlank()) { ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.EMPTY_CONTENT)); return; }
             p = postService.updateContent(id, content);
+            postsCache.invalidateAll();
             Map<String, Object> out = new HashMap<>();
             out.put("id", p.getId());
             out.put(ApiConstants.Keys.CONTENT, p.getContent());
@@ -184,6 +217,7 @@ public class PostController {
             Post p = op.get();
             if (p.getAuthorId() != uid) { ctx.status(403).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.FORBIDDEN)); return; }
             postService.delete(id);
+            postsCache.invalidateAll();
             ctx.status(204);
         } catch (Exception e) {
             log.error("Unexpected error in delete post", e);
