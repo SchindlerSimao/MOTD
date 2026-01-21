@@ -22,6 +22,10 @@ developed by Colin Stefani and Simão Romano Schindler, as part of the teaching 
 - jwt-based authentication for protected endpoints
 - authorization checks ensuring users can only modify their own content
 
+### caching
+- `GET /posts` responses are cached in-memory using caffeine
+- cache expires after 60 seconds or is invalidated on create/update/delete
+
 ---
 
 ## installation
