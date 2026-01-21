@@ -4,7 +4,7 @@ import ch.heig.motd.api.ApiConstants;
 import ch.heig.motd.dto.Credentials;
 import ch.heig.motd.service.AuthService;
 import ch.heig.motd.service.UserService;
-import ch.heig.motd.auth.JwtProvider;
+import ch.heig.motd.auth.JwtProviderInterface;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.javalin.http.Context;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,7 +89,7 @@ public class AuthControllerTest {
     @Test
     public void logout_invalidToken_returns401() {
         when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "bad");
-        JwtProvider jwtProv = mock(JwtProvider.class);
+        JwtProviderInterface jwtProv = mock(JwtProviderInterface.class);
         when(authService.jwtProvider()).thenReturn(jwtProv);
         when(jwtProv.verifyToken("bad")).thenReturn(null);
 
@@ -103,7 +103,7 @@ public class AuthControllerTest {
     public void logout_validToken_revokes_and_returns200() {
         String token = "goodTok";
         when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + token);
-        JwtProvider jwtProv = mock(JwtProvider.class);
+        JwtProviderInterface jwtProv = mock(JwtProviderInterface.class);
         DecodedJWT dec = mock(DecodedJWT.class);
         when(authService.jwtProvider()).thenReturn(jwtProv);
         when(jwtProv.verifyToken(token)).thenReturn(dec);

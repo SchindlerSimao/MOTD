@@ -1,6 +1,6 @@
 package ch.heig.motd.service;
 
-import ch.heig.motd.auth.JwtProvider;
+import ch.heig.motd.auth.JwtProviderInterface;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -42,5 +42,5 @@ public interface AuthService {
      * Gets the JwtProvider instance.
      * @return the JwtProvider
      */
-    JwtProvider jwtProvider();
+    JwtProviderInterface jwtProvider();
 }

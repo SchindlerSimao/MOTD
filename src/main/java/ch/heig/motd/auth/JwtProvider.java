@@ -11,7 +11,7 @@ import java.util.Date;
 /**
  * This class provides methods to create and verify JWT tokens.
  */
-public class JwtProvider {
+public class JwtProvider implements JwtProviderInterface {
     /**
      * The algorithm used for signing and verifying JWT tokens.
      */

@@ -90,6 +90,64 @@ public class PostControllerTest {
     }
 
     @Test
+    public void list_usesCache() {
+        Post p = new Post(1L, 2L, "c", Instant.now(), LocalDate.now());
+        when(postService.findAll()).thenReturn(List.of(p));
+
+        controller.list(ctx);
+        controller.list(ctx);
+
+        verify(postService, times(1)).findAll();
+    }
+
+    @Test
+    public void create_invalidatesCache() {
+        Post p = new Post(1L, 3L, "c", Instant.now(), LocalDate.now());
+        when(postService.findAll()).thenReturn(List.of(p));
+        when(ctx.attribute("uid")).thenReturn(3L);
+        when(ctx.bodyAsClass(PostDto.class)).thenReturn(new PostDto("new"));
+        when(postService.create(3L, "new")).thenReturn(p);
+
+        controller.list(ctx);
+        controller.create(ctx);
+        controller.list(ctx);
+
+        verify(postService, times(2)).findAll();
+    }
+
+    @Test
+    public void update_invalidatesCache() {
+        Post p = new Post(1L, 3L, "c", Instant.now(), LocalDate.now());
+        when(postService.findAll()).thenReturn(List.of(p));
+        when(ctx.attribute("uid")).thenReturn(3L);
+        when(ctx.pathParam("id")).thenReturn("1");
+        when(postService.findById(1L)).thenReturn(Optional.of(p));
+        when(ctx.bodyAsClass(Map.class)).thenReturn(Map.of(ApiConstants.Keys.CONTENT, "updated"));
+        when(postService.updateContent(1L, "updated")).thenReturn(p);
+
+        controller.list(ctx);
+        controller.update(ctx);
+        controller.list(ctx);
+
+        verify(postService, times(2)).findAll();
+    }
+
+    @Test
+    public void delete_invalidatesCache() {
+        Post p = new Post(1L, 3L, "c", Instant.now(), LocalDate.now());
+        when(postService.findAll()).thenReturn(List.of(p));
+        when(ctx.attribute("uid")).thenReturn(3L);
+        when(ctx.pathParam("id")).thenReturn("1");
+        when(postService.findById(1L)).thenReturn(Optional.of(p));
+
+        controller.list(ctx);
+        controller.delete(ctx);
+        controller.list(ctx);
+
+        verify(postService, times(2)).findAll();
+    }
+
+    @Test
     public void update_notFound_returns404() {
         when(ctx.attribute("uid")).thenReturn(1L);
         when(ctx.pathParam("id")).thenReturn("5");

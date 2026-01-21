@@ -1,12 +1,11 @@
 package ch.heig.motd.service;
 
-import ch.heig.motd.auth.JwtProvider;
+import ch.heig.motd.auth.JwtProviderInterface;
 import ch.heig.motd.model.User;
-import ch.heig.motd.repository.TokenRevocationStore;
+import ch.heig.motd.repository.TokenStore;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import com.auth0.jwt.interfaces.DecodedJWT;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -16,15 +15,15 @@ import static org.mockito.Mockito.*;
 
 public class AuthServiceImplTest {
     private UserService userService;
-    private TokenRevocationStore tokenStore;
-    private JwtProvider jwtProvider;
+    private TokenStore tokenStore;
+    private JwtProviderInterface jwtProvider;
     private AuthServiceImpl authService;
 
     @BeforeEach
     public void setup() {
         userService = mock(UserService.class);
-        tokenStore = mock(TokenRevocationStore.class);
-        jwtProvider = mock(JwtProvider.class);
+        tokenStore = mock(TokenStore.class);
+        jwtProvider = mock(JwtProviderInterface.class);
         authService = new AuthServiceImpl(userService, tokenStore, jwtProvider);
     }
 

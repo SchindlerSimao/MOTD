@@ -1,6 +1,6 @@
 package ch.heig.motd.service;
 
-import ch.heig.motd.auth.JwtProvider;
+import ch.heig.motd.auth.JwtProviderInterface;
 import ch.heig.motd.repository.TokenStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ public class AuthServiceImpl implements AuthService {
     /**
      * JWT provider for token creation and validation.
      */
-    private final JwtProvider jwtProvider;
+    private final JwtProviderInterface jwtProvider;
 
     /**
      * Constructor.
@@ -39,7 +39,7 @@ public class AuthServiceImpl implements AuthService {
      * @param tokenStore token store
      * @param jwtProvider JWT provider
      */
-    public AuthServiceImpl(UserService userService, TokenStore tokenStore, JwtProvider jwtProvider) {
+    public AuthServiceImpl(UserService userService, TokenStore tokenStore, JwtProviderInterface jwtProvider) {
         this.userService = userService;
         this.tokenStore = tokenStore;
         this.jwtProvider = jwtProvider;
@@ -82,5 +82,5 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public JwtProvider jwtProvider() { return jwtProvider; }
+    public JwtProviderInterface jwtProvider() { return jwtProvider; }
 }
