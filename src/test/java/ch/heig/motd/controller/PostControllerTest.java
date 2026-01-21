@@ -45,8 +45,7 @@ public class PostControllerTest {
 
     @Test
     public void create_emptyContent_returns400() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "token");
-        when(authService.validateAndGetUserId("token")).thenReturn(Optional.of(1L));
+        when(ctx.attribute("uid")).thenReturn(1L);
         when(ctx.bodyAsClass(PostDto.class)).thenReturn(new PostDto(""));
 
         controller.create(ctx);
@@ -57,8 +56,7 @@ public class PostControllerTest {
 
     @Test
     public void create_userNotFound_returns404() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "token");
-        when(authService.validateAndGetUserId("token")).thenReturn(Optional.of(42L));
+        when(ctx.attribute("uid")).thenReturn(42L);
         when(ctx.bodyAsClass(PostDto.class)).thenReturn(new PostDto("hello"));
         when(postService.create(42L, "hello")).thenThrow(new NotFoundResponse("user not found"));
 
@@ -70,8 +68,7 @@ public class PostControllerTest {
 
     @Test
     public void create_validRequest_returns201() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "token");
-        when(authService.validateAndGetUserId("token")).thenReturn(Optional.of(3L));
+        when(ctx.attribute("uid")).thenReturn(3L);
         when(ctx.bodyAsClass(PostDto.class)).thenReturn(new PostDto("Salut"));
         Post created = new Post(1L, 3L, "Salut", Instant.now(), LocalDate.now());
         when(postService.create(3L, "Salut")).thenReturn(created);
@@ -94,8 +91,7 @@ public class PostControllerTest {
 
     @Test
     public void update_notFound_returns404() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "t");
-        when(authService.validateAndGetUserId("t")).thenReturn(Optional.of(1L));
+        when(ctx.attribute("uid")).thenReturn(1L);
         when(ctx.pathParam("id")).thenReturn("5");
         when(postService.findById(5L)).thenReturn(Optional.empty());
 
@@ -106,8 +102,7 @@ public class PostControllerTest {
 
     @Test
     public void update_notAuthor_returns403() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "t");
-        when(authService.validateAndGetUserId("t")).thenReturn(Optional.of(2L));
+        when(ctx.attribute("uid")).thenReturn(2L);
         when(ctx.pathParam("id")).thenReturn("10");
         Post p = new Post(10L, 3L, "x", Instant.now(), LocalDate.now());
         when(postService.findById(10L)).thenReturn(Optional.of(p));
@@ -119,8 +114,7 @@ public class PostControllerTest {
 
     @Test
     public void delete_notFound_returns404() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "t");
-        when(authService.validateAndGetUserId("t")).thenReturn(Optional.of(1L));
+        when(ctx.attribute("uid")).thenReturn(1L);
         when(ctx.pathParam("id")).thenReturn("7");
         when(postService.findById(7L)).thenReturn(Optional.empty());
 
@@ -131,8 +125,7 @@ public class PostControllerTest {
 
     @Test
     public void delete_notAuthor_returns403() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "t");
-        when(authService.validateAndGetUserId("t")).thenReturn(Optional.of(2L));
+        when(ctx.attribute("uid")).thenReturn(2L);
         when(ctx.pathParam("id")).thenReturn("8");
         Post p = new Post(8L, 9L, "x", Instant.now(), LocalDate.now());
         when(postService.findById(8L)).thenReturn(Optional.of(p));
@@ -144,8 +137,7 @@ public class PostControllerTest {
 
     @Test
     public void delete_validRequest_returns204() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "t");
-        when(authService.validateAndGetUserId("t")).thenReturn(Optional.of(4L));
+        when(ctx.attribute("uid")).thenReturn(4L);
         when(ctx.pathParam("id")).thenReturn("11");
         Post p = new Post(11L, 4L, "x", Instant.now(), LocalDate.now());
         when(postService.findById(11L)).thenReturn(Optional.of(p));
