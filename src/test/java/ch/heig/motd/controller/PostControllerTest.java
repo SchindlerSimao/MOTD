@@ -205,4 +205,40 @@ public class PostControllerTest {
         verify(postService).delete(11L);
         verify(ctx).status(204);
     }
+
+    @Test
+    public void list_withDateFilter_returnsPosts() {
+        LocalDate date = LocalDate.of(2026, 1, 22);
+        Post p = new Post(1L, 2L, "c", Instant.now(), date);
+        when(ctx.queryParam("date")).thenReturn("2026-01-22");
+        when(postService.findByDate(date)).thenReturn(List.of(p));
+
+        controller.list(ctx);
+
+        verify(postService).findByDate(date);
+        verify(ctx).json(any());
+    }
+
+    @Test
+    public void list_withInvalidDateFormat_returns400() {
+        when(ctx.queryParam("date")).thenReturn("invalid-date");
+
+        controller.list(ctx);
+
+        verify(ctx).status(400);
+        verify(ctx).json(argThat(obj -> ((Map) obj).get(ApiConstants.Keys.ERROR).equals("invalid.date.format")));
+    }
+
+    @Test
+    public void list_withDateFilter_usesCache() {
+        LocalDate date = LocalDate.of(2026, 1, 22);
+        Post p = new Post(1L, 2L, "c", Instant.now(), date);
+        when(ctx.queryParam("date")).thenReturn("2026-01-22");
+        when(postService.findByDate(date)).thenReturn(List.of(p));
+
+        controller.list(ctx);
+        controller.list(ctx);
+
+        verify(postService, times(1)).findByDate(date);
+    }
 }
