@@ -15,10 +15,9 @@ services:
     depends_on:
       - db
     volumes:
-      - ./src/main/resources/db/migration:/flyway/sql:ro
+      - ../src/main/resources/db/migration:/flyway/sql:ro
       - flyway-state:/flyway/state
     entrypoint: ["/bin/sh", "-c"]
-    # baselineOnMigrate=true: if the DB already has objects (from previous runs), initialize flyway history without failing
     command: ["flyway -url=jdbc:postgresql://db:5432/motd -user=motd -password=motd -baselineOnMigrate=true migrate && mkdir -p /flyway/state && touch /flyway/state/done"]
 
   app:

@@ -55,7 +55,8 @@ mvn clean package
 
 start all services (database, migrations, and application):
 ```bash
-docker-compose up --build
+cd app
+docker compose up
 ```
 
 the api will be available at `http://localhost:7000`
