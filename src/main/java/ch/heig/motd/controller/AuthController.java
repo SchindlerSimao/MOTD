@@ -7,6 +7,7 @@ import ch.heig.motd.service.AuthService;
 import ch.heig.motd.service.UserService;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.javalin.http.Context;
+import io.javalin.openapi.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,39 +16,28 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Authentication controller handling user registration, login, logout, and account deletion.
- */
 public class AuthController {
-    /**
-     * Logger for the AuthController class.
-     */
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
-
-    /**
-     * Authentication service for handling auth-related operations.
-     */
     private final AuthService authService;
-
-    /**
-     * User service for handling user-related operations.
-     */
     private final UserService userService;
 
-    /**
-     * Constructor for AuthController.
-     * @param authService authentication service
-     * @param userService user service
-     */
     public AuthController(AuthService authService, UserService userService) {
         this.authService = authService;
         this.userService = userService;
     }
 
-    /**
-     * Handles user registration.
-     * @param ctx the Javalin context
-     */
+    @OpenApi(
+        path = "/auth/register",
+        methods = HttpMethod.POST,
+        summary = "Register a new user",
+        tags = {"Auth"},
+        requestBody = @OpenApiRequestBody(content = @OpenApiContent(from = Credentials.class)),
+        responses = {
+            @OpenApiResponse(status = "201", description = "User created"),
+            @OpenApiResponse(status = "400", description = "Bad request"),
+            @OpenApiResponse(status = "409", description = "Username exists")
+        }
+    )
     public void register(Context ctx) {
         try {
             String body = ctx.body();
@@ -85,10 +75,18 @@ public class AuthController {
         }
     }
 
-    /**
-     * Handles user login.
-     * @param ctx the Javalin context
-     */
+    @OpenApi(
+        path = "/auth/login",
+        methods = HttpMethod.POST,
+        summary = "Login",
+        tags = {"Auth"},
+        requestBody = @OpenApiRequestBody(content = @OpenApiContent(from = Credentials.class)),
+        responses = {
+            @OpenApiResponse(status = "200", description = "Login successful"),
+            @OpenApiResponse(status = "400", description = "Bad request"),
+            @OpenApiResponse(status = "401", description = "Invalid credentials")
+        }
+    )
     public void login(Context ctx) {
         try {
             Map body = ctx.bodyAsClass(Map.class);
@@ -108,10 +106,16 @@ public class AuthController {
         }
     }
 
-    /**
-     * Handles user logout.
-     * @param ctx the Javalin context
-     */
+    @OpenApi(
+        path = "/auth/logout",
+        methods = HttpMethod.POST,
+        summary = "Logout",
+        tags = {"Auth"},
+        responses = {
+            @OpenApiResponse(status = "200", description = "Logged out"),
+            @OpenApiResponse(status = "401", description = "Unauthorized")
+        }
+    )
     public void logout(Context ctx) {
         try {
             final String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);
@@ -129,10 +133,16 @@ public class AuthController {
         }
     }
 
-    /**
-     * Handles user account deletion.
-     * @param ctx the Javalin context
-     */
+    @OpenApi(
+        path = "/auth/delete",
+        methods = HttpMethod.DELETE,
+        summary = "Delete account",
+        tags = {"Auth"},
+        responses = {
+            @OpenApiResponse(status = "204", description = "Account deleted"),
+            @OpenApiResponse(status = "401", description = "Unauthorized")
+        }
+    )
     public void delete(Context ctx) {
         try {
             final String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);

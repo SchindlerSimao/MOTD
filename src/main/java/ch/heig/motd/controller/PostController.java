@@ -8,6 +8,7 @@ import io.javalin.http.NotFoundResponse;
 import ch.heig.motd.service.PostService;
 import io.javalin.http.Context;
 import io.javalin.http.HandlerType;
+import io.javalin.openapi.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,42 +18,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/**
- * Controller for managing posts.
- */
 public class PostController {
-    /**
-     * Logger instance for logging.
-     */
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
-
-    /**
-     * Post service for handling post operations.
-     */
     private final PostService postService;
-
-    /**
-     * Authentication service for handling authentication.
-     */
     private final AuthService authService;
 
-    /**
-     * Constructor.
-     * @param postService post service
-     * @param authService authentication service
-     */
     public PostController(PostService postService, AuthService authService) {
         this.postService = postService;
         this.authService = authService;
     }
 
-    /**
-     * Require authentication for mutating requests. If authentication fails, responds with 401.
-     * Otherwise, sets the "uid" attribute in the context.
-     * @param ctx Javalin context
-     */
     public void requireAuth(Context ctx) {
-        // only enforce for mutating HTTP methods
         HandlerType method = ctx.method();
         if (!(method == HandlerType.POST || method == HandlerType.PUT || method == HandlerType.DELETE)) {
             return;
@@ -71,10 +47,15 @@ public class PostController {
         ctx.attribute("uid", opt.get());
     }
 
-    /**
-     * Lists all existing posts.
-     * @param ctx Javalin context
-     */
+    @OpenApi(
+        path = "/posts",
+        methods = HttpMethod.GET,
+        summary = "List all posts",
+        tags = {"Posts"},
+        responses = {
+            @OpenApiResponse(status = "200", description = "List of posts")
+        }
+    )
     public void list(Context ctx) {
         try {
             List<Post> posts = postService.findAll();
@@ -94,13 +75,20 @@ public class PostController {
         }
     }
 
-    /**
-     * Creates a new post.
-     * @param ctx Javalin context
-     */
+    @OpenApi(
+        path = "/posts",
+        methods = HttpMethod.POST,
+        summary = "Create a post",
+        tags = {"Posts"},
+        requestBody = @OpenApiRequestBody(content = @OpenApiContent(from = PostDto.class)),
+        responses = {
+            @OpenApiResponse(status = "201", description = "Post created"),
+            @OpenApiResponse(status = "401", description = "Unauthorized"),
+            @OpenApiResponse(status = "400", description = "Bad request")
+        }
+    )
     public void create(Context ctx) {
         try {
-            // requireAuth must have set uid attribute; enforce centralized auth
             Long uid = ctx.attribute("uid");
             if (uid == null) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.UNAUTHORIZED)); return; }
 
@@ -113,7 +101,6 @@ public class PostController {
                 }
                 content = newPost.content();
             } catch (Exception e) {
-                // strict API: reject malformed or non-conforming JSON
                 log.warn("Failed to parse body as PostDto: {}", e.getMessage());
                 ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.EMPTY_CONTENT));
                 return;
@@ -134,10 +121,20 @@ public class PostController {
         }
     }
 
-    /**
-     * Updates an existing post.
-     * @param ctx Javalin context
-     */
+    @OpenApi(
+        path = "/posts/{id}",
+        methods = HttpMethod.PUT,
+        summary = "Update a post",
+        tags = {"Posts"},
+        pathParams = @OpenApiParam(name = "id", type = Long.class, description = "Post ID"),
+        requestBody = @OpenApiRequestBody(content = @OpenApiContent(from = PostDto.class)),
+        responses = {
+            @OpenApiResponse(status = "200", description = "Post updated"),
+            @OpenApiResponse(status = "401", description = "Unauthorized"),
+            @OpenApiResponse(status = "403", description = "Forbidden"),
+            @OpenApiResponse(status = "404", description = "Not found")
+        }
+    )
     public void update(Context ctx) {
         try {
             Long uid = ctx.attribute("uid");
@@ -161,10 +158,19 @@ public class PostController {
         }
     }
 
-    /**
-     * Deletes an existing post.
-     * @param ctx Javalin context
-     */
+    @OpenApi(
+        path = "/posts/{id}",
+        methods = HttpMethod.DELETE,
+        summary = "Delete a post",
+        tags = {"Posts"},
+        pathParams = @OpenApiParam(name = "id", type = Long.class, description = "Post ID"),
+        responses = {
+            @OpenApiResponse(status = "204", description = "Post deleted"),
+            @OpenApiResponse(status = "401", description = "Unauthorized"),
+            @OpenApiResponse(status = "403", description = "Forbidden"),
+            @OpenApiResponse(status = "404", description = "Not found")
+        }
+    )
     public void delete(Context ctx) {
         try {
             Long uid = ctx.attribute("uid");
