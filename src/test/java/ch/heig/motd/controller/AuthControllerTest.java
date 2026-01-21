@@ -2,19 +2,19 @@ package ch.heig.motd.controller;
 
 import ch.heig.motd.api.ApiConstants;
 import ch.heig.motd.dto.Credentials;
-import ch.heig.motd.model.User;
 import ch.heig.motd.service.AuthService;
 import ch.heig.motd.service.UserService;
+import ch.heig.motd.auth.JwtProvider;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import io.javalin.http.Context;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
+import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class AuthControllerTest {
@@ -29,7 +29,6 @@ public class AuthControllerTest {
         userService = mock(UserService.class);
         controller = new AuthController(authService, userService);
         ctx = mock(Context.class);
-        // important: Javalin's Context.status(...) returns the Context for chaining
         when(ctx.status(anyInt())).thenReturn(ctx);
     }
 
@@ -64,5 +63,57 @@ public class AuthControllerTest {
 
         verify(ctx).status(401);
         verify(ctx).json(argThat(obj -> ((Map) obj).get(ApiConstants.Keys.ERROR).equals(ApiConstants.Errors.INVALID_CREDENTIALS)));
+    }
+
+    @Test
+    public void login_valid_returns200() {
+        when(ctx.bodyAsClass(Map.class)).thenReturn(Map.of(ApiConstants.Keys.USERNAME, "alice", ApiConstants.Keys.PASSWORD, "good"));
+        when(authService.login("alice", "good")).thenReturn(Optional.of("tok-1"));
+
+        controller.login(ctx);
+
+        verify(ctx).status(200);
+        verify(ctx).json(argThat(obj -> ((Map) obj).get(ApiConstants.Keys.TOKEN).equals("tok-1")));
+    }
+
+    @Test
+    public void logout_missingToken_returns401() {
+        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(null);
+
+        controller.logout(ctx);
+
+        verify(ctx).status(401);
+        verify(ctx).json(argThat(obj -> ((Map) obj).get(ApiConstants.Keys.ERROR).equals(ApiConstants.Errors.MISSING_TOKEN)));
+    }
+
+    @Test
+    public void logout_invalidToken_returns401() {
+        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "bad");
+        JwtProvider jwtProv = mock(JwtProvider.class);
+        when(authService.jwtProvider()).thenReturn(jwtProv);
+        when(jwtProv.verifyToken("bad")).thenReturn(null);
+
+        controller.logout(ctx);
+
+        verify(ctx).status(401);
+        verify(ctx).json(argThat(obj -> ((Map) obj).get(ApiConstants.Keys.ERROR).equals(ApiConstants.Errors.INVALID_TOKEN)));
+    }
+
+    @Test
+    public void logout_validToken_revokes_and_returns200() {
+        String token = "goodTok";
+        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + token);
+        JwtProvider jwtProv = mock(JwtProvider.class);
+        DecodedJWT dec = mock(DecodedJWT.class);
+        when(authService.jwtProvider()).thenReturn(jwtProv);
+        when(jwtProv.verifyToken(token)).thenReturn(dec);
+        when(dec.getId()).thenReturn("jti-123");
+        when(dec.getExpiresAt()).thenReturn(Date.from(Instant.now().plusSeconds(3600)));
+
+        controller.logout(ctx);
+
+        verify(authService).logout(eq("jti-123"), any());
+        verify(ctx).status(200);
+        verify(ctx).json(argThat(obj -> ((Map) obj).get("message").equals("logged.out")));
     }
 }

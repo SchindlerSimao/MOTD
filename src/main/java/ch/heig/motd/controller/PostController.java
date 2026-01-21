@@ -1,8 +1,10 @@
 package ch.heig.motd.controller;
 
 import ch.heig.motd.api.ApiConstants;
+import ch.heig.motd.dto.PostDto;
 import ch.heig.motd.model.Post;
 import ch.heig.motd.service.AuthService;
+import io.javalin.http.NotFoundResponse;
 import ch.heig.motd.service.PostService;
 import io.javalin.http.Context;
 import org.slf4j.Logger;
@@ -10,7 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class PostController {
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
@@ -52,11 +53,28 @@ public class PostController {
         try {
             Long uid = getUserIdFromAuth(ctx);
             if (uid == null) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.UNAUTHORIZED)); return; }
-            var body = ctx.bodyAsClass(Map.class);
-            String content = (String) body.get(ApiConstants.Keys.CONTENT);
+
+            String content;
+            try {
+                PostDto newPost = ctx.bodyAsClass(PostDto.class);
+                content = newPost.content();
+            } catch (Exception e) {
+                // Fallback: try to parse as a generic map (compatibility with malformed/old clients)
+                log.warn("Failed to parse body as PostDto, trying Map fallback: {}", e.getMessage());
+                try {
+                    var bodyMap = ctx.bodyAsClass(Map.class);
+                    content = (String) bodyMap.get(ApiConstants.Keys.CONTENT);
+                } catch (Exception e2) {
+                    log.error("Failed to parse request body for create post", e2);
+                    throw e2;
+                }
+            }
+
             if (content == null || content.isBlank()) { ctx.status(400).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.EMPTY_CONTENT)); return; }
             Post p = postService.create(uid, content);
             ctx.status(201).json(Map.of("id", p.getId(), ApiConstants.Keys.CONTENT, p.getContent(), "authorId", p.getAuthorId()));
+        } catch (NotFoundResponse e) {
+            ctx.status(404).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.NOT_FOUND));
         } catch (Exception e) {
             log.error("Unexpected error in create post", e);
             ctx.status(500).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.INTERNAL_ERROR));

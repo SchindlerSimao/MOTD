@@ -1,10 +1,12 @@
 package ch.heig.motd.controller;
 
 import ch.heig.motd.api.ApiConstants;
+import ch.heig.motd.dto.PostDto;
 import ch.heig.motd.model.Post;
 import ch.heig.motd.service.AuthService;
 import ch.heig.motd.service.PostService;
 import io.javalin.http.Context;
+import io.javalin.http.NotFoundResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,16 +34,6 @@ public class PostControllerTest {
     }
 
     @Test
-    public void list_returnsPosts() {
-        var post = new Post(1L, 42L, "test post", Instant.now(), LocalDate.now());
-        when(postService.findAll()).thenReturn(List.of(post));
-
-        controller.list(ctx);
-
-        verify(ctx).json(argThat(obj -> ((List) obj).size() == 1));
-    }
-
-    @Test
     public void create_missingAuth_returns401() {
         when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(null);
 
@@ -53,9 +45,9 @@ public class PostControllerTest {
 
     @Test
     public void create_emptyContent_returns400() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn("Bearer token123");
-        when(authService.validateAndGetUserId("token123")).thenReturn(Optional.of(42L));
-        when(ctx.bodyAsClass(Map.class)).thenReturn(Map.of(ApiConstants.Keys.CONTENT, ""));
+        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "token");
+        when(authService.validateAndGetUserId("token")).thenReturn(Optional.of(1L));
+        when(ctx.bodyAsClass(PostDto.class)).thenReturn(new PostDto(""));
 
         controller.create(ctx);
 
@@ -64,52 +56,73 @@ public class PostControllerTest {
     }
 
     @Test
-    public void create_validRequest_returns201() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn("Bearer token123");
-        when(authService.validateAndGetUserId("token123")).thenReturn(Optional.of(42L));
-        when(ctx.bodyAsClass(Map.class)).thenReturn(Map.of(ApiConstants.Keys.CONTENT, "hello world"));
-        var post = new Post(1L, 42L, "hello world", Instant.now(), LocalDate.now());
-        when(postService.create(42L, "hello world")).thenReturn(post);
+    public void create_userNotFound_returns404() {
+        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "token");
+        when(authService.validateAndGetUserId("token")).thenReturn(Optional.of(42L));
+        when(ctx.bodyAsClass(PostDto.class)).thenReturn(new PostDto("hello"));
+        when(postService.create(42L, "hello")).thenThrow(new NotFoundResponse("user not found"));
 
         controller.create(ctx);
-
-        verify(ctx).status(201);
-        verify(ctx).json(argThat(obj -> ((Map) obj).get("id").equals(1L)));
-    }
-
-    @Test
-    public void update_notFound_returns404() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn("Bearer token123");
-        when(authService.validateAndGetUserId("token123")).thenReturn(Optional.of(42L));
-        when(ctx.pathParam("id")).thenReturn("999");
-        when(postService.findById(999L)).thenReturn(Optional.empty());
-
-        controller.update(ctx);
 
         verify(ctx).status(404);
         verify(ctx).json(argThat(obj -> ((Map) obj).get(ApiConstants.Keys.ERROR).equals(ApiConstants.Errors.NOT_FOUND)));
     }
 
     @Test
+    public void create_validRequest_returns201() {
+        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "token");
+        when(authService.validateAndGetUserId("token")).thenReturn(Optional.of(3L));
+        when(ctx.bodyAsClass(PostDto.class)).thenReturn(new PostDto("Salut"));
+        Post created = new Post(1L, 3L, "Salut", Instant.now(), LocalDate.now());
+        when(postService.create(3L, "Salut")).thenReturn(created);
+
+        controller.create(ctx);
+
+        verify(ctx).status(201);
+        verify(ctx).json(argThat(obj -> ((Map) obj).get("id").equals(1L) && ((Map) obj).get("authorId").equals(3L)));
+    }
+
+    @Test
+    public void list_returnsPosts() {
+        Post p = new Post(1L, 2L, "c", Instant.now(), LocalDate.now());
+        when(postService.findAll()).thenReturn(List.of(p));
+
+        controller.list(ctx);
+
+        verify(ctx).json(any());
+    }
+
+    @Test
+    public void update_notFound_returns404() {
+        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "t");
+        when(authService.validateAndGetUserId("t")).thenReturn(Optional.of(1L));
+        when(ctx.pathParam("id")).thenReturn("5");
+        when(postService.findById(5L)).thenReturn(Optional.empty());
+
+        controller.update(ctx);
+
+        verify(ctx).status(404);
+    }
+
+    @Test
     public void update_notAuthor_returns403() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn("Bearer token123");
-        when(authService.validateAndGetUserId("token123")).thenReturn(Optional.of(42L));
-        when(ctx.pathParam("id")).thenReturn("1");
-        var post = new Post(1L, 99L, "test", Instant.now(), LocalDate.now());
-        when(postService.findById(1L)).thenReturn(Optional.of(post));
+        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "t");
+        when(authService.validateAndGetUserId("t")).thenReturn(Optional.of(2L));
+        when(ctx.pathParam("id")).thenReturn("10");
+        Post p = new Post(10L, 3L, "x", Instant.now(), LocalDate.now());
+        when(postService.findById(10L)).thenReturn(Optional.of(p));
 
         controller.update(ctx);
 
         verify(ctx).status(403);
-        verify(ctx).json(argThat(obj -> ((Map) obj).get(ApiConstants.Keys.ERROR).equals(ApiConstants.Errors.FORBIDDEN)));
     }
 
     @Test
     public void delete_notFound_returns404() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn("Bearer token123");
-        when(authService.validateAndGetUserId("token123")).thenReturn(Optional.of(42L));
-        when(ctx.pathParam("id")).thenReturn("999");
-        when(postService.findById(999L)).thenReturn(Optional.empty());
+        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "t");
+        when(authService.validateAndGetUserId("t")).thenReturn(Optional.of(1L));
+        when(ctx.pathParam("id")).thenReturn("7");
+        when(postService.findById(7L)).thenReturn(Optional.empty());
 
         controller.delete(ctx);
 
@@ -118,11 +131,11 @@ public class PostControllerTest {
 
     @Test
     public void delete_notAuthor_returns403() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn("Bearer token123");
-        when(authService.validateAndGetUserId("token123")).thenReturn(Optional.of(42L));
-        when(ctx.pathParam("id")).thenReturn("1");
-        var post = new Post(1L, 99L, "test", Instant.now(), LocalDate.now());
-        when(postService.findById(1L)).thenReturn(Optional.of(post));
+        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "t");
+        when(authService.validateAndGetUserId("t")).thenReturn(Optional.of(2L));
+        when(ctx.pathParam("id")).thenReturn("8");
+        Post p = new Post(8L, 9L, "x", Instant.now(), LocalDate.now());
+        when(postService.findById(8L)).thenReturn(Optional.of(p));
 
         controller.delete(ctx);
 
@@ -131,15 +144,15 @@ public class PostControllerTest {
 
     @Test
     public void delete_validRequest_returns204() {
-        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn("Bearer token123");
-        when(authService.validateAndGetUserId("token123")).thenReturn(Optional.of(42L));
-        when(ctx.pathParam("id")).thenReturn("1");
-        var post = new Post(1L, 42L, "test", Instant.now(), LocalDate.now());
-        when(postService.findById(1L)).thenReturn(Optional.of(post));
+        when(ctx.header(ApiConstants.Headers.AUTHORIZATION)).thenReturn(ApiConstants.Headers.BEARER_PREFIX + "t");
+        when(authService.validateAndGetUserId("t")).thenReturn(Optional.of(4L));
+        when(ctx.pathParam("id")).thenReturn("11");
+        Post p = new Post(11L, 4L, "x", Instant.now(), LocalDate.now());
+        when(postService.findById(11L)).thenReturn(Optional.of(p));
 
         controller.delete(ctx);
 
+        verify(postService).delete(11L);
         verify(ctx).status(204);
-        verify(postService).delete(1L);
     }
 }

@@ -3,6 +3,7 @@ package ch.heig.motd.service;
 import ch.heig.motd.model.Post;
 import ch.heig.motd.repository.PostRepository;
 import ch.heig.motd.repository.UserRepository;
+import io.javalin.http.NotFoundResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +23,11 @@ public class PostServicePostgres implements PostService {
     @Override
     public Post create(long authorId, String content) {
         log.info("Create post by user {}", authorId);
+        // Vérifier que l'utilisateur existe
+        var userOpt = userRepo.findById(authorId);
+        if (userOpt.isEmpty()) {
+            throw new NotFoundResponse("user not found");
+        }
         return postRepo.save(authorId, content);
     }
 
