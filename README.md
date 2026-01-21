@@ -96,6 +96,18 @@ curl -X POST http://localhost:7000/posts \
 curl http://localhost:7000/posts
 ```
 
+
+## vm creation
+
+we used an azure vm to host our web application. we followed the steps described in the
+[course material](https://github.com/heig-vd-dai-course/heig-vd-dai-course/blob/main/11.03-ssh-and-scp/01-course-material/README.md),
+except we used different resource and vm names.
+
+the teaching staff public key
+`ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF5deyMbQaRaiO4ojymkCoWBtwPyG8Y+4BbLQsb413KC heig-vd-dai-course`
+was added to the vm for ssh access.
+
+
 ---
 
 parts of this project were developed with ai assistance.
