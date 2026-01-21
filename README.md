@@ -80,13 +80,27 @@ curl -X POST https://motd.cstef.dev/auth/register \
   -d '{"username": "alice", "password": "secret123"}'
 ```
 
+Output: 
+```json
+{
+  "username": "alice",
+  "id": 9,
+  "createdAt": "2026-01-21T18:54:51.171834299Z"
+}
+```
+
 **login:**
 ```bash
 curl -X POST https://motd.cstef.dev/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": "alice", "password": "secret123"}'
 ```
-
+Output:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5IiwidXNlcm5hbWUiOiJhbGljZSIsImlhdCI6MTc2OTAyMTcxOCwiZXhwIjoxNzY5MTA4MTE4LCJqdGkiOiJiZmQzM2IyNC03NWFlLTRlN2EtYjgwMi04OTZiYjhjNjQ0NTYifQ.uhhepJ6SNjT7vRjXWHwxAg7QLgY2thGHMyoy1RyV_4E"
+}
+```
 **create a post (requires authentication):**
 ```bash
 curl -X POST https://motd.cstef.dev/posts \
@@ -94,16 +108,43 @@ curl -X POST https://motd.cstef.dev/posts \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{"content": "hello world!"}'
 ```
+Output:
+```json
+{
+  "id": 45,
+  "authorId": 9,
+  "content": "ça marche..."
+}
+```
 
 **get all posts:**
 ```bash
 curl https://motd.cstef.dev/posts
 ```
+Output:
+```json
+[
+  {
+    "createdAt": "2026-01-21T18:56:21.847995Z",
+    "displayAt": "2026-01-22",
+    "id": 45,
+    "authorId": 9,
+    "content": "ça marche..."
+  },
+  {
+    "createdAt": "2026-01-21T18:56:11.427983Z",
+    "displayAt": "2026-01-22",
+    "id": 44,
+    "authorId": 9,
+    "content": "ça marche... plus ou moins"
+  }
+]
+```
 
 **swagger ui:**
 
 the swagger ui is available at `https://motd.cstef.dev`
-
+![Swagger UI](assets/swagger_ui.png)
 
 ## vm creation
 
