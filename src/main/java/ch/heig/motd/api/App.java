@@ -15,8 +15,6 @@ import ch.heig.motd.service.UserServicePostgres;
 import ch.heig.motd.auth.JwtProvider;
 import io.javalin.Javalin;
 import io.javalin.openapi.plugin.OpenApiPlugin;
-import io.javalin.openapi.plugin.OpenApiPluginConfiguration;
-import io.javalin.openapi.plugin.swagger.SwaggerConfiguration;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 
 import javax.sql.DataSource;
@@ -41,12 +39,15 @@ public class App {
         TokenRevocationStore tokenStore = new TokenRevocationStore();
         AuthService authService = new AuthServiceImpl(userService, tokenStore, JwtProvider.defaultProvider());
 
-        SwaggerConfiguration swaggerConfig = new SwaggerConfiguration();
-        swaggerConfig.setUiPath("/");
-
         Javalin app = Javalin.create(config -> {
-            config.plugins.register(new OpenApiPlugin(new OpenApiPluginConfiguration()));
-            config.plugins.register(new SwaggerPlugin(swaggerConfig));
+            config.registerPlugin(new OpenApiPlugin(pluginConfig -> {
+                pluginConfig.withDefinitionConfiguration((version, definition) -> {
+                    definition.withOpenApiInfo(info -> info.setTitle("MOTD API"));
+                });
+            }));
+            config.registerPlugin(new SwaggerPlugin(swaggerConfig -> {
+                swaggerConfig.setUiPath("/");
+            }));
         }).start(7000);
 
         // controllers
