@@ -42,8 +42,9 @@ services:
       - traefik-public
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.motd.rule=Host(`motd.duckdns.org`)"
-      - "traefik.http.routers.motd.entrypoints=web"
+      - "traefik.http.routers.motd.rule=Host(`motd.cstef.dev`)"
+      - "traefik.http.routers.motd.entrypoints=websecure"
+      - "traefik.http.routers.motd.tls.certresolver=letsencrypt"
       - "traefik.http.services.motd.loadbalancer.server.port=7000"
 
 volumes:
