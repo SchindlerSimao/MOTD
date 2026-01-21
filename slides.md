@@ -16,7 +16,7 @@ author: Colin Stefani & Simão Romano Schindler
 
 # API
 
-![Swagger UI](assets/swagger_ui.png)
+![image:width:100%](assets/swagger_ui.png)
 
 <!-- end_slide -->
 
@@ -72,7 +72,7 @@ curl -X POST https://motd.cstef.dev/posts \
 
 ```bash +exec
 curl -X PUT https://motd.cstef.dev/posts/1 \
-  -H "Content-Type: application/json"
+  -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{"content": "hello modified world!"}'
 ```
