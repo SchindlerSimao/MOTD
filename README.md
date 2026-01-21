@@ -115,6 +115,19 @@ the teaching staff public key
 `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF5deyMbQaRaiO4ojymkCoWBtwPyG8Y+4BbLQsb413KC heig-vd-dai-course`
 was added to the vm for ssh access.
 
+## dns configuration
+
+the domain `motd.cstef.dev` is managed via cloudflare dns.
+
+```
+$ dig motd.cstef.dev +noall +answer
+motd.cstef.dev.		300	IN	A	20.251.197.5
+```
+
+- **type:** A record pointing to the azure vm public ip
+- **ttl:** 300 seconds (5 minutes)
+- **nameservers:** cloudflare (`ignat.ns.cloudflare.com`, `tegan.ns.cloudflare.com`)
+
 
 ---
 
