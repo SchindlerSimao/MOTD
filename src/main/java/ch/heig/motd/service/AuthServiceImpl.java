@@ -2,6 +2,7 @@ package ch.heig.motd.service;
 
 import ch.heig.motd.auth.JwtProvider;
 import ch.heig.motd.repository.TokenStore;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,12 +70,17 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public Optional<Long> validateAndGetUserId(String token) {
+        return validateAndGetClaims(token).map(claims -> Long.parseLong(claims.getSubject()));
+    }
+
+    @Override
+    public Optional<DecodedJWT> validateAndGetClaims(String token) {
         try {
-            com.auth0.jwt.interfaces.DecodedJWT claims = jwtProvider.verifyToken(token);
+            DecodedJWT claims = jwtProvider.verifyToken(token);
             if (claims == null) { log.warn("Invalid token"); return Optional.empty(); }
             String jti = claims.getId();
             if (isTokenRevoked(jti)) { log.warn("Token is revoked: {}", jti); return Optional.empty(); }
-            return Optional.of(Long.parseLong(claims.getSubject()));
+            return Optional.of(claims);
         } catch (Exception e) {
             log.error("Error validating token", e);
             return Optional.empty();

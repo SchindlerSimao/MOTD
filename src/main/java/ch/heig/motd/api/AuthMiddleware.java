@@ -1,6 +1,7 @@
 package ch.heig.motd.api;
 
 import ch.heig.motd.service.AuthService;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import io.javalin.http.Context;
 
 import java.util.Map;
@@ -25,12 +26,13 @@ public class AuthMiddleware {
             return;
         }
         String token = auth.substring(ApiConstants.Headers.BEARER_PREFIX.length());
-        Optional<Long> opt = authService.validateAndGetUserId(token);
-        if (opt.isEmpty()) {
+        Optional<DecodedJWT> decOpt = authService.validateAndGetClaims(token);
+        if (decOpt.isEmpty()) {
             ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.INVALID_TOKEN));
             return;
         }
-        ctx.attribute("uid", opt.get());
+        DecodedJWT dec = decOpt.get();
+        ctx.attribute("decodedJwt", dec);
+        ctx.attribute("uid", Long.parseLong(dec.getSubject()));
     }
 }
-

@@ -16,16 +16,39 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Authentication controller handling user registration, login, logout, and account deletion.
+ */
 public class AuthController {
+    /**
+     * Logger instance for logging.
+     */
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+
+    /**
+     * Authentication service.
+     */
     private final AuthService authService;
+
+    /**
+     * User service.
+     */
     private final UserService userService;
 
+    /**
+     * Constructor.
+     * @param authService authentication service
+     * @param userService user service
+     */
     public AuthController(AuthService authService, UserService userService) {
         this.authService = authService;
         this.userService = userService;
     }
 
+    /**
+     * Register a new user.
+     * @param ctx Javalin context
+     */
     @OpenApi(
         path = "/auth/register",
         methods = HttpMethod.POST,
@@ -75,6 +98,10 @@ public class AuthController {
         }
     }
 
+    /**
+     * Login a user.
+     * @param ctx Javalin context
+     */
     @OpenApi(
         path = "/auth/login",
         methods = HttpMethod.POST,
@@ -106,6 +133,10 @@ public class AuthController {
         }
     }
 
+    /**
+     * Logout a user.
+     * @param ctx Javalin context
+     */
     @OpenApi(
         path = "/auth/logout",
         methods = HttpMethod.POST,
@@ -119,11 +150,9 @@ public class AuthController {
     )
     public void logout(Context ctx) {
         try {
-            final String auth = ctx.header(ApiConstants.Headers.AUTHORIZATION);
-            if (auth == null || !auth.startsWith(ApiConstants.Headers.BEARER_PREFIX)) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.MISSING_TOKEN)); return; }
-            final String token = auth.substring(ApiConstants.Headers.BEARER_PREFIX.length());
-            final DecodedJWT dec = authService.jwtProvider().verifyToken(token);
-            if (dec == null) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.INVALID_TOKEN)); return; }
+            // The AuthMiddleware sets the "decodedJwt" and "uid" attributes when the request is authenticated.
+            DecodedJWT dec = ctx.attribute("decodedJwt");
+            if (dec == null) { ctx.status(401).json(Map.of(ApiConstants.Keys.ERROR, ApiConstants.Errors.MISSING_TOKEN)); return; }
             String jti = dec.getId();
             Instant exp = dec.getExpiresAt().toInstant();
             authService.logout(jti, exp);
@@ -134,6 +163,10 @@ public class AuthController {
         }
     }
 
+    /**
+     * Delete the authenticated user's account.
+     * @param ctx Javalin context
+     */
     @OpenApi(
         path = "/auth/delete",
         methods = HttpMethod.DELETE,

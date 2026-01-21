@@ -21,6 +21,7 @@ public final class AuthRoutes {
         app.post(ApiConstants.Paths.AUTH_REGISTER, authController::register);
         app.post(ApiConstants.Paths.AUTH_LOGIN, authController::login);
         app.post(ApiConstants.Paths.AUTH_LOGOUT, authController::logout);
+        app.before(ApiConstants.Paths.AUTH_LOGOUT, authMiddleware::requireAuth);
         app.before(ApiConstants.Paths.AUTH_DELETE, authMiddleware::requireAuth);
         app.delete(ApiConstants.Paths.AUTH_DELETE, authController::delete);
     }
