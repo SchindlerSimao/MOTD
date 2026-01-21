@@ -95,14 +95,6 @@ curl -X POST https://motd.cstef.dev/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username": "alice", "password": "secret123"}'
 ```
-response:
-```json
-{
-  "username": "alice",
-  "createdAt": "2026-01-21T19:31:47.582951779Z",
-  "id": 6
-}
-```
 
 Output: 
 ```json
