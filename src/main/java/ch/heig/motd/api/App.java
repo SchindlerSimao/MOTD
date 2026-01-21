@@ -41,12 +41,14 @@ public class App {
 
         Javalin app = Javalin.create(config -> {
             config.registerPlugin(new OpenApiPlugin(pluginConfig -> {
+                pluginConfig.withDocumentationPath("/openapi");
                 pluginConfig.withDefinitionConfiguration((version, definition) -> {
                     definition.withOpenApiInfo(info -> info.setTitle("MOTD API"));
                 });
             }));
             config.registerPlugin(new SwaggerPlugin(swaggerConfig -> {
                 swaggerConfig.setUiPath("/");
+                swaggerConfig.setDocumentationPath("/openapi");
             }));
         }).start(7000);
 

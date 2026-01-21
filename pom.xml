@@ -116,6 +116,13 @@
         <version>3.11.0</version>
         <configuration>
           <release>21</release>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>io.javalin.community.openapi</groupId>
+              <artifactId>openapi-annotation-processor</artifactId>
+              <version>${javalin.version}</version>
+            </path>
+          </annotationProcessorPaths>
         </configuration>
       </plugin>
 
