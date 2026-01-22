@@ -32,6 +32,16 @@ author: Colin Stefani & Simão Romano Schindler
 
 # DNS
 
+![DNS provider](assets/cloudflare_logo.png)
+
+## Configuration
+- **Domaine:** `motd.cstef.dev`
+- **Type:** A record → `20.251.197.5` (IP publique Azure)
+- **TTL:** 300 secondes (5 minutes)
+
+```bash +exec
+dig motd.cstef.dev +noall +answer
+```
 
 <!-- end_slide -->
 
@@ -41,9 +51,9 @@ author: Colin Stefani & Simão Romano Schindler
 ## Enregistrement d'un utilisateur
 
 ```bash +exec
-curl -X POST https://motd.cstef.dev/auth/register \
+curl -s -X POST https://motd.cstef.dev/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username": "alice", "password": "secret123"}'
+  -d '{"username": "alice", "password": "secret123"}' | jq -C
 ```
 
 <!-- end_slide -->
@@ -51,9 +61,10 @@ curl -X POST https://motd.cstef.dev/auth/register \
 ## Connexion
 
 ```bash +exec
-curl -X POST https://motd.cstef.dev/auth/login \
+curl -s -X POST https://motd.cstef.dev/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "alice", "password": "secret123"}'
+  -d '{"username": "alice", "password": "secret123"}' | jq -r '.token' > /tmp/token
+echo "Token: $(cat /tmp/token)"
 ```
 
 <!-- end_slide -->
@@ -61,35 +72,66 @@ curl -X POST https://motd.cstef.dev/auth/login \
 ## Création d'un post
 
 ```bash +exec
-curl -X POST https://motd.cstef.dev/posts \
+curl -s -X POST https://motd.cstef.dev/posts \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{"content": "hello world!"}'
+  -H "Authorization: Bearer $(cat /tmp/token)" \
+  -d '{"content": "hello world!"}' | tee >(jq -r '.id' > /tmp/post_id) | jq -C
 ```
 <!-- end_slide -->
 
 ## Modification d'un post
 
 ```bash +exec
-curl -X PUT https://motd.cstef.dev/posts/1 \
+curl -s -X PUT https://motd.cstef.dev/posts/$(cat /tmp/post_id) \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{"content": "hello modified world!"}'
+  -H "Authorization: Bearer $(cat /tmp/token)" \
+  -d '{"content": "hello modified world!"}' | jq -C
 ```
 <!-- end_slide -->
 
 ## Récupération des posts
 
 ```bash +exec
-curl https://motd.cstef.dev/posts
+curl -s https://motd.cstef.dev/posts | jq -C '.[:3]'
 ```
 <!-- end_slide -->
 
 ## Suppression d'un post
 
 ```bash +exec
-curl -X DELETE https://motd.cstef.dev/posts/1 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+curl -s -o /dev/null -w "HTTP %{http_code}\n" -X DELETE https://motd.cstef.dev/posts/$(cat /tmp/post_id) \
+  -H "Authorization: Bearer $(cat /tmp/token)"
 ```
 <!-- end_slide -->
-# Questions
+
+# Améliorations
+
+- Révocation des tokens JWT (Sécurité)
+- DELETE to `/auth/delete`
+- Frontend?
+- Redondances dans le code
+
+<!-- end_slide -->
+
+# Difficultés
+
+- Javalin
+- Documentation
+- Configuration HTTPS Traefik + duckdns.org
+- Mockito
+
+<!-- end_slide -->
+
+# Achievements
+
+- Stack complet: Flyway, Mockito, OpenApi
+- Couverture des UT
+- Architecture globale du projet minimale et modulaire
+- CI/CD Github Actions w/ caching
+- Coordination d'équipe avec GitHub, rythme
+
+<!-- end_slide -->
+
+<!-- jump_to_middle -->
+Questions? \o
+===
