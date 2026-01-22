@@ -46,7 +46,6 @@ dig motd.cstef.dev +noall +answer
 <!-- end_slide -->
 
 # Démo
-===
 
 ## Enregistrement d'un utilisateur
 
